@@ -1,0 +1,18 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = [
+    "meson-python",
+    "numpy"
+]
+
+[project]
+name = "physical_dtype"
+version = "0.1.0"
+description = "A simple tutorial package"
+requires-python = ">=3.11"
+authors = [
+    {name = "Riku", email = "rikusaka03@gmail.com"},
+]
+dependencies = [
+    "numpy",
+]
