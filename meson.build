@@ -1,4 +1,4 @@
-project('physical_dtype', 'c')
+project('physicaldtype', 'c')
 
 
 py = import('python').find_installation(pure: false)
@@ -19,12 +19,22 @@ includes = include_directories(
   ]
 )
 srcs = [
-    'src/physical_dtype/module.c',
+    'src/physicaldtype/physicaldtype_main.c',
 ]
 
+
+py.install_sources(
+  [
+    'src/__init__.py',
+  ],
+  subdir: 'physicaldtype',
+  pure: false
+)
+
 py.extension_module(
-    'physical_dtype',
+    '_physicaldtype_main',
     sources: srcs,
     install: true,
+    subdir: 'physicaldtype',
     include_directories: includes
 )

@@ -10,6 +10,7 @@
 #include "numpy/dtype_api.h"
 
 
+
 static PyObject* my_function(PyObject* self){
     return PyUnicode_FromString("Hello from C!");
 };
@@ -22,13 +23,13 @@ static PyMethodDef module_methods[] = {
 
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "physical_dtype",
+    .m_name = "_physicaldtype_main",
     .m_size = -1,
     .m_methods = module_methods,
 };
 
 
-PyMODINIT_FUNC PyInit_physical_dtype(void) {
+PyMODINIT_FUNC PyInit__physicaldtype_main(void) {
     import_array();
     // import_umath();
 
