@@ -20,6 +20,8 @@ includes = include_directories(
 )
 srcs = [
     'src/physicaldtype/physicaldtype_main.c',
+    'src/physicaldtype/physical_backend_type.c',
+    'src/physicaldtype/physical_backend_type.h',
 ]
 
 
