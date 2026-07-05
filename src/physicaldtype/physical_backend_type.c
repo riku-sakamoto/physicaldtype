@@ -64,7 +64,6 @@ static int PhysicalBackendObject_init(PhysicalBackendObject *self, PyObject *arg
                 return -1;
             }
             self->exponents[i] = PyFloat_AsDouble(item);
-            Py_DECREF(item);
         }
         return 0;
     }
