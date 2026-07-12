@@ -1,5 +1,5 @@
-#ifndef _PHYSICALDTYPE_BACKENDTYPE_H
-#define _PHYSICALDTYPE_BACKENDTYPE_H
+#ifndef _PHYSICALDTYPE_DIMENSION_H
+#define _PHYSICALDTYPE_DIMENSION_H
 
 #include <Python.h>
 
@@ -13,16 +13,16 @@ typedef enum {
     DIM_LUMINOUS_INTENSITY, // J
 
     DIM_COUNT // Total number of dimensions
-} PhysicalDimensionType;
+} PhysicalDimensionKindType;
 
 
 typedef struct {
     PyObject_HEAD
     double exponents[DIM_COUNT]; // Exponents for each dimension
     // PyObject* units[DIM_COUNT];  // Python str: "m", "kg", "s"
-} PhysicalBackendObject;
+} PhysicalDimensionObject;
 
 
-extern PyTypeObject PhysicalBackendObjectType;
+extern PyTypeObject PhysicalDimensionObjectType;
 
 #endif

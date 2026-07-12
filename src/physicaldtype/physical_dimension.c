@@ -1,13 +1,14 @@
 
 
-#include "physical_backend_type.h"
 #include <Python.h>
 #include <stddef.h> /* for offsetof() */
 
+#include "physical_dimension.h"
 
-static PyObject *PhysicalBackendObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    PhysicalBackendObject *self;
-    self = (PhysicalBackendObject *)type->tp_alloc(type, 0);
+
+static PyObject *PhysicalDimensionObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+    PhysicalDimensionObject *self;
+    self = (PhysicalDimensionObject *)type->tp_alloc(type, 0);
     if (self != NULL) {
         for (int i = 0; i < DIM_COUNT; i++) {
             self->exponents[i] = 0.0; // Initialize exponents to zero
@@ -42,7 +43,7 @@ static int parse_dimension_name_to_index(const char *dim_name) {
     return -1; // Invalid dimension name
 };
 
-static int PhysicalBackendObject_init(PhysicalBackendObject *self, PyObject *args, PyObject *kwds) {
+static int PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyObject *kwds) {
     static char *kwlist[] = {"exponents", NULL};
     PyObject *exponents_obj = NULL;
 
@@ -97,13 +98,13 @@ static int PhysicalBackendObject_init(PhysicalBackendObject *self, PyObject *arg
 };
 
 
-static PyMemberDef PhysicalBackendObject_members[] = {
-    // {"exponents", T_DOUBLE, offsetof(PhysicalBackendObject, exponents), 0, "Exponents for each dimension"},
+static PyMemberDef PhysicalDimensionObject_members[] = {
+    // {"exponents", T_DOUBLE, offsetof(PhysicalDimensionObject, exponents), 0, "Exponents for each dimension"},
     {NULL}  /* Sentinel */
 };
 
 
-static PyObject *PhysicalBackendObject_get_exponent(PhysicalBackendObject *self, PyObject *args) {
+static PyObject *PhysicalDimensionObject_get_exponent(PhysicalDimensionObject *self, PyObject *args) {
     const char *dim_name;
     if (!PyArg_ParseTuple(args, "s", &dim_name)) {
         return NULL;
@@ -119,19 +120,19 @@ static PyObject *PhysicalBackendObject_get_exponent(PhysicalBackendObject *self,
 
 };
 
-static PyMethodDef PhysicalBackendObject_methods[] = {
-    {"get_exponent", (PyCFunction)PhysicalBackendObject_get_exponent, METH_VARARGS, "Get the exponent for a given dimension name"},
+static PyMethodDef PhysicalDimensionObject_methods[] = {
+    {"get_exponent", (PyCFunction)PhysicalDimensionObject_get_exponent, METH_VARARGS, "Get the exponent for a given dimension name"},
     {NULL}  /* Sentinel */
 };
 
-PyTypeObject PhysicalBackendObjectType = {
+PyTypeObject PhysicalDimensionObjectType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "_physicaldtype_main.PhysicalBackend",
-    .tp_basicsize = sizeof(PhysicalBackendObject),
+    .tp_name = "_physicaldtype_main.PhysicalDimension",
+    .tp_basicsize = sizeof(PhysicalDimensionObject),
     .tp_itemsize = 0,
-    .tp_new = PhysicalBackendObject_new,
-    .tp_init = PhysicalBackendObject_init,
+    .tp_new = PhysicalDimensionObject_new,
+    .tp_init = PhysicalDimensionObject_init,
     .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_members = PhysicalBackendObject_members,
-    .tp_methods = PhysicalBackendObject_methods,
+    .tp_members = PhysicalDimensionObject_members,
+    .tp_methods = PhysicalDimensionObject_methods,
 };

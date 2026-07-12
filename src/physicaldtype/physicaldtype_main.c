@@ -10,7 +10,7 @@
 #include "numpy/dtype_api.h"
 
 
-#include "physical_backend_type.h"
+#include "physical_dimension.h"
 
 static PyObject* my_function(PyObject* self){
     return PyUnicode_FromString("Hello from C!");
@@ -45,7 +45,7 @@ PyMODINIT_FUNC PyInit__physicaldtype_main(void) {
         return NULL;
     }
 
-    if (PyModule_AddType(m, &PhysicalBackendObjectType) < 0) {
+    if (PyModule_AddType(m, &PhysicalDimensionObjectType) < 0) {
         goto error;
     }
 
