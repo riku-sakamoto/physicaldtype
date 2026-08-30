@@ -4,18 +4,19 @@
 
 #include <numpy/ndarraytypes.h>
 #include <numpy/dtype_api.h>
-#include "physical_common.h"
+
+#include "physical_dimension.h"
 
 
 typedef struct {
     PyArray_Descr base;
-    PhysicalBackendType unit;
+    PhysicalDimensionObject *physical_dimension;
 } PhysicalDTypeObject;
 
 extern PyArray_DTypeMeta PhysicalDType;
 
 PhysicalDTypeObject *
-new_physicaldtype_instance(PhysicalBackendType backend);
+new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension);
 
 int
 init_physical_dtype(void);

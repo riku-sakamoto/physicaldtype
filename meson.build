@@ -22,6 +22,8 @@ srcs = [
     'src/physicaldtype/physicaldtype_main.c',
     'src/physicaldtype/physical_dimension.c',
     'src/physicaldtype/physical_dimension.h',
+    'src/physicaldtype/dtype.c',
+    'src/physicaldtype/dtype.h',
 ]
 
 

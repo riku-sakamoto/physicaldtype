@@ -1,3 +1,3 @@
-from ._physicaldtype_main import my_function, PhysicalBackend
+from ._physicaldtype_main import my_function, PhysicalDimension, PhysicalDType
 
-__all__ = ["my_function", "PhysicalBackend"]
+__all__ = ["my_function", "PhysicalDimension", "PhysicalDType"]

@@ -11,6 +11,7 @@
 
 
 #include "physical_dimension.h"
+#include "dtype.h"
 
 static PyObject* my_function(PyObject* self){
     return PyUnicode_FromString("Hello from C!");
@@ -49,9 +50,13 @@ PyMODINIT_FUNC PyInit__physicaldtype_main(void) {
         goto error;
     }
 
-    // if(init_physical_dtype() < 0) {
-    //     goto error;
-    // }
+    if(init_physical_dtype() < 0) {
+        goto error;
+    }
+
+    if (PyModule_AddObject(m, "PhysicalDType", (PyObject *)&PhysicalDType) < 0){
+        goto error;
+    }
 
     return m;
 
