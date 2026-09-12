@@ -5,20 +5,22 @@
 
 #include "physical_dimension.h"
 
-
-static PyObject *PhysicalDimensionObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+static PyObject *
+PhysicalDimensionObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
     PhysicalDimensionObject *self;
     self = (PhysicalDimensionObject *)type->tp_alloc(type, 0);
     if (self != NULL) {
         for (int i = 0; i < DIM_COUNT; i++) {
-            self->exponents[i] = 0.0; // Initialize exponents to zero
+            self->exponents[i] = 0.0;  // Initialize exponents to zero
         }
     }
     return (PyObject *)self;
 };
 
-
-static int parse_dimension_name_to_index(const char *dim_name) {
+static int
+parse_dimension_name_to_index(const char *dim_name)
+{
     if (strcmp(dim_name, "L") == 0) {
         return DIM_LENGTH;
     }
@@ -40,15 +42,18 @@ static int parse_dimension_name_to_index(const char *dim_name) {
     if (strcmp(dim_name, "J") == 0) {
         return DIM_LUMINOUS_INTENSITY;
     }
-    return -1; // Invalid dimension name
+    return -1;  // Invalid dimension name
 };
 
-static int PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyObject *kwds) {
+static int
+PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyObject *kwds)
+{
     static char *kwlist[] = {"exponents", NULL};
     PyObject *exponents_obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &exponents_obj)) {
-        PyErr_SetString(PyExc_TypeError, "Invalid arguments: expected a list or dictionary for 'exponents'");
+        PyErr_SetString(PyExc_TypeError,
+                        "Invalid arguments: expected a list or dictionary for 'exponents'");
         return -1;
     }
 
@@ -61,7 +66,8 @@ static int PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject 
         for (Py_ssize_t i = 0; i < PyList_Size(exponents_obj); i++) {
             PyObject *item = PyList_GetItem(exponents_obj, i);
             if (!PyFloat_Check(item) && !PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "Exponents list must contain only floats or integers");
+                PyErr_SetString(PyExc_TypeError,
+                                "Exponents list must contain only floats or integers");
                 return -1;
             }
             self->exponents[i] = PyFloat_AsDouble(item);
@@ -78,12 +84,13 @@ static int PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject 
                 return -1;
             }
             if (!PyFloat_Check(value) && !PyLong_Check(value)) {
-                PyErr_SetString(PyExc_TypeError, "Values in exponents dictionary must be floats or integers");
+                PyErr_SetString(PyExc_TypeError,
+                                "Values in exponents dictionary must be floats or integers");
                 return -1;
             }
             const char *dim_name = PyUnicode_AsUTF8(key);
             double exponent_value = PyFloat_AsDouble(value);
-            
+
             int index = parse_dimension_name_to_index(dim_name);
             if (index == -1) {
                 PyErr_Format(PyExc_ValueError, "Invalid dimension name: %s", dim_name);
@@ -97,14 +104,15 @@ static int PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject 
     return -1;
 };
 
-
 static PyMemberDef PhysicalDimensionObject_members[] = {
-    // {"exponents", T_DOUBLE, offsetof(PhysicalDimensionObject, exponents), 0, "Exponents for each dimension"},
-    {NULL}  /* Sentinel */
+        // {"exponents", T_DOUBLE, offsetof(PhysicalDimensionObject, exponents), 0, "Exponents for
+        // each dimension"},
+        {NULL} /* Sentinel */
 };
 
-
-static PyObject *PhysicalDimensionObject_get_exponent(PhysicalDimensionObject *self, PyObject *args) {
+static PyObject *
+PhysicalDimensionObject_get_exponent(PhysicalDimensionObject *self, PyObject *args)
+{
     const char *dim_name;
     if (!PyArg_ParseTuple(args, "s", &dim_name)) {
         return NULL;
@@ -117,22 +125,21 @@ static PyObject *PhysicalDimensionObject_get_exponent(PhysicalDimensionObject *s
     }
 
     return PyFloat_FromDouble(self->exponents[index]);
-
 };
 
 static PyMethodDef PhysicalDimensionObject_methods[] = {
-    {"get_exponent", (PyCFunction)PhysicalDimensionObject_get_exponent, METH_VARARGS, "Get the exponent for a given dimension name"},
-    {NULL}  /* Sentinel */
+        {"get_exponent", (PyCFunction)PhysicalDimensionObject_get_exponent, METH_VARARGS,
+         "Get the exponent for a given dimension name"},
+        {NULL} /* Sentinel */
 };
 
 PyTypeObject PhysicalDimensionObjectType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "_physicaldtype_main.PhysicalDimension",
-    .tp_basicsize = sizeof(PhysicalDimensionObject),
-    .tp_itemsize = 0,
-    .tp_new = PhysicalDimensionObject_new,
-    .tp_init = PhysicalDimensionObject_init,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_members = PhysicalDimensionObject_members,
-    .tp_methods = PhysicalDimensionObject_methods,
+        PyVarObject_HEAD_INIT(NULL, 0).tp_name = "_physicaldtype_main.PhysicalDimension",
+        .tp_basicsize = sizeof(PhysicalDimensionObject),
+        .tp_itemsize = 0,
+        .tp_new = PhysicalDimensionObject_new,
+        .tp_init = PhysicalDimensionObject_init,
+        .tp_flags = Py_TPFLAGS_DEFAULT,
+        .tp_members = PhysicalDimensionObject_members,
+        .tp_methods = PhysicalDimensionObject_methods,
 };

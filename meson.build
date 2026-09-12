@@ -24,6 +24,8 @@ srcs = [
     'src/physicaldtype/physical_dimension.h',
     'src/physicaldtype/dtype.c',
     'src/physicaldtype/dtype.h',
+    'src/physicaldtype/casts.c',
+    'src/physicaldtype/casts.h',
 ]
 
 

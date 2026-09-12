@@ -3,7 +3,7 @@
 
 #include "dtype.h"
 #include "physical_dimension.h"
-
+#include "casts.h"
 
 PyTypeObject *PhysicalScalar_Type = NULL;
 
