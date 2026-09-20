@@ -1,5 +1,8 @@
 #include <Python.h>
 
+#define PY_ARRAY_UNIQUE_SYMBOL physicaldtype_ARRAY_API
+#define PY_UFUNC_UNIQUE_SYMBOL physicaldtype_UFUNC_API
+#define NO_IMPORT_ARRAY
 #define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION
 #define NPY_TARGET_VERSION NPY_2_0_API_VERSION
 #define NO_IMPORT_ARRAY

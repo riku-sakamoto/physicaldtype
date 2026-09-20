@@ -10,7 +10,7 @@ requires = [
 name = "physicaldtype"
 version = "0.1.0"
 description = "A simple tutorial package"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<=3.14"
 authors = [
     {name = "Riku", email = "rikusaka03@gmail.com"},
 ]
