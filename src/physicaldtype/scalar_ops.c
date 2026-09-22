@@ -26,6 +26,7 @@ try_cast_to_physical_scalar(PyObject *obj)
         }
 
         PhysicalScalarObject *new = PhysicalScalar_raw_new(obj, default_dimension);
+        Py_DECREF(default_dimension);
         return new;
     }
 
@@ -48,9 +49,15 @@ physical_scalar_add(PyObject *a, PyObject *b)
         return NULL;
     }
 
+    PyObject_Print(scalar_a->value, stdout, 0);
+    PyObject_Print(scalar_b->value, stdout, 0);
+
     PyObject *result_value = PyNumber_Add(scalar_a->value, scalar_b->value);
 
-    return (PyObject *)PhysicalScalar_raw_new(result_value, result_dim);
+    PyObject *new = PhysicalScalar_raw_new(result_value, result_dim);
+    Py_DECREF(result_value);
+    Py_DECREF(result_dim);
+    return new;
 }
 
 static PyObject *
@@ -71,7 +78,10 @@ physical_scalar_subtract(PyObject *a, PyObject *b)
 
     PyObject *result_value = PyNumber_Subtract(scalar_a->value, scalar_b->value);
 
-    return (PyObject *)PhysicalScalar_raw_new(result_value, result_dim);
+    PyObject *new = PhysicalScalar_raw_new(result_value, result_dim);
+    Py_DECREF(result_value);
+    Py_DECREF(result_dim);
+    return new;
 }
 
 static PyObject *
@@ -92,7 +102,10 @@ physical_scalar_multiply(PyObject *a, PyObject *b)
 
     PyObject *result_value = PyNumber_Multiply(scalar_a->value, scalar_b->value);
 
-    return (PyObject *)PhysicalScalar_raw_new(result_value, result_dim);
+    PyObject *new = PhysicalScalar_raw_new(result_value, result_dim);
+    Py_DECREF(result_value);
+    Py_DECREF(result_dim);
+    return new;
 }
 
 static PyObject *
@@ -110,6 +123,13 @@ physical_scalar_divide(PyObject *a, PyObject *b)
     if (result_dim == NULL) {
         return NULL;
     }
+
+    PyObject *result_value = PyNumber_TrueDivide(scalar_a->value, scalar_b->value);
+
+    PyObject *new = PhysicalScalar_raw_new(result_value, result_dim);
+    Py_DECREF(result_value);
+    Py_DECREF(result_dim);
+    return new;
 }
 
 PyNumberMethods PhysicalScalarObject_as_scalar = {

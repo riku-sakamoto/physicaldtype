@@ -14,17 +14,11 @@
 
 /*
 　This function creates a new PhysicalScalarObject with the given value and physical dimension.
-  NOTE: This function STEALS references to both value and physical_dimension,
-  so the caller should not DECREF them after calling this function.
+  NOTE: This function create new references to both value and physical_dimension.
  */
 PhysicalScalarObject *
 PhysicalScalar_raw_new(PyObject *value, PhysicalDimensionObject *physical_dimension)
 {
-    PhysicalScalarObject *self = PyObject_New(PhysicalScalarObject, &PhysicalScalar_Type);
-    if (self == NULL) {
-        return NULL;
-    }
-
     if (value == NULL) {
         PyErr_SetString(PyExc_TypeError, "value argument is required");
         return NULL;
@@ -39,12 +33,18 @@ PhysicalScalar_raw_new(PyObject *value, PhysicalDimensionObject *physical_dimens
         return NULL;
     }
     if (PyDataType_ISNUMBER(descr) == 0) {
+        Py_DECREF(descr);
         PyErr_SetString(PyExc_TypeError, "value must be a numeric NumPy scalar");
         return NULL;
     }
 
-    self->value = value;
-    self->physical_dimension = physical_dimension;
+    PhysicalScalarObject *self = PyObject_New(PhysicalScalarObject, &PhysicalScalar_Type);
+    if (self == NULL) {
+        return NULL;
+    }
+
+    self->value = Py_NewRef(value);
+    self->physical_dimension = Py_NewRef(physical_dimension);
     return self;
 }
 
@@ -125,7 +125,25 @@ static PyMethodDef PhysicalScalarObject_methods[] = {
         {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
+static PyObject *
+PhysicalScalarObject_get_value(PhysicalScalarObject *self, void *closure)
+{
+    Py_INCREF(self->value);
+    return self->value;
+}
+
+static PyObject *
+PhysicalScalarObject_get_dimension(PhysicalScalarObject *self, void *closure)
+{
+    Py_INCREF(self->physical_dimension);
+    return (PyObject *)self->physical_dimension;
+}
+
 static PyGetSetDef PhysicalScalarObject_getset[] = {
+        {"value", (getter)PhysicalScalarObject_get_value, NULL,
+         "Get the value of the PhysicalScalarObject", NULL},
+        {"dimension", (getter)PhysicalScalarObject_get_dimension, NULL,
+         "Get the physical dimension of the PhysicalScalarObject", NULL},
         // {"dtype", (getter)PhysicalScalarObject_get_dtype, NULL, "Get the dtype of the
         // PhysicalScalarObject", NULL},
         // {"dimensions", (getter)PhysicalScalarObject_get_dimension, NULL, "Get the physical
