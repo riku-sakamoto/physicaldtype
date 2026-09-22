@@ -26,6 +26,8 @@ srcs = [
     'src/physicaldtype/dtype.h',
     'src/physicaldtype/casts.c',
     'src/physicaldtype/casts.h',
+    'src/physicaldtype/scalar.c',
+    'src/physicaldtype/scalar.h',
 ]
 
 

@@ -7,8 +7,7 @@
 #include "dtype.h"
 #include "physical_dimension.h"
 #include "casts.h"
-
-PyTypeObject *PhysicalScalar_Type = NULL;
+#include "scalar.h"
 
 PhysicalDTypeObject *
 new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension)
@@ -98,16 +97,17 @@ init_physical_dtype(void)
     // Initialize the physical dtype
 
     PyArrayMethod_Spec **casts = init_casts();
-    if (!casts) 
+    if (!casts)
         return -1;
 
+    // //
     // https://numpy.org/doc/stable/reference/c-api/types-and-structures.html#c.PyArrayDTypeMeta_Spec
-    PyArrayDTypeMeta_Spec PhysicalDType_DTypeSpec = {
-            .typeobj = &PhysicalScalar_Type,
-            .flags = NPY_DT_PARAMETRIC | NPY_DT_NUMERIC,
-            .casts = casts,
-            .slots = PhysicalDType_Slots,
-    };
+    // PyArrayDTypeMeta_Spec PhysicalDType_DTypeSpec = {
+    //         .typeobj = &PhysicalScalar_Type,
+    //         .flags = NPY_DT_PARAMETRIC | NPY_DT_NUMERIC,
+    //         .casts = casts,
+    //         .slots = PhysicalDType_Slots,
+    // };
 
     return 0;
 }

@@ -46,25 +46,21 @@ parse_dimension_name_to_index(const char *dim_name)
 };
 
 static int
-PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyObject *kwds)
+PhysicalDimension_raw_init(PhysicalDimensionObject *self, PyObject *dimensions)
 {
-    static char *kwlist[] = {"exponents", NULL};
-    PyObject *exponents_obj = NULL;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &exponents_obj)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "Invalid arguments: expected a list or dictionary for 'exponents'");
-        return -1;
+    if (dimensions == NULL) {
+        // Return with all exponents initialized to zero
+        return 0;
     }
 
-    if (exponents_obj && PyList_Check(exponents_obj)) {
-        if (PyList_Size(exponents_obj) > DIM_COUNT) {
+    if (PyList_Check(dimensions)) {
+        if (PyList_Size(dimensions) > DIM_COUNT) {
             PyErr_SetString(PyExc_ValueError, "Exponents list must not exceed DIM_COUNT=7");
             return -1;
         }
 
-        for (Py_ssize_t i = 0; i < PyList_Size(exponents_obj); i++) {
-            PyObject *item = PyList_GetItem(exponents_obj, i);
+        for (Py_ssize_t i = 0; i < PyList_Size(dimensions); i++) {
+            PyObject *item = PyList_GetItem(dimensions, i);
             if (!PyFloat_Check(item) && !PyLong_Check(item)) {
                 PyErr_SetString(PyExc_TypeError,
                                 "Exponents list must contain only floats or integers");
@@ -75,10 +71,10 @@ PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyOb
         return 0;
     }
 
-    if (exponents_obj && PyDict_Check(exponents_obj)) {
+    if (PyDict_Check(dimensions)) {
         PyObject *key, *value;
         Py_ssize_t pos = 0;
-        while (PyDict_Next(exponents_obj, &pos, &key, &value)) {
+        while (PyDict_Next(dimensions, &pos, &key, &value)) {
             if (!PyUnicode_Check(key)) {
                 PyErr_SetString(PyExc_TypeError, "Keys in exponents dictionary must be strings");
                 return -1;
@@ -101,7 +97,44 @@ PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyOb
         return 0;
     }
 
+    PyErr_SetString(PyExc_TypeError, "Invalid argument type: expected a list or dictionary");
     return -1;
+}
+
+PhysicalDimensionObject *
+PhysicalDimension_raw_new(PyObject *dimensions)
+{
+    PhysicalDimensionObject *self =
+            PyObject_New(PhysicalDimensionObject, &PhysicalDimensionObjectType);
+    if (self == NULL) {
+        return NULL;
+    }
+
+    if (PhysicalDimension_raw_init(self, dimensions) == -1) {
+        Py_DECREF(self);
+        return NULL;
+    }
+
+    return self;
+}
+
+static int
+PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"exponents", NULL};
+    PyObject *exponents_obj = NULL;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &exponents_obj)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "Invalid arguments: expected a list or dictionary for 'exponents'");
+        return -1;
+    }
+
+    if (PhysicalDimension_raw_init(self, exponents_obj) == -1) {
+        return -1;
+    }
+
+    return 0;
 };
 
 static PyMemberDef PhysicalDimensionObject_members[] = {
