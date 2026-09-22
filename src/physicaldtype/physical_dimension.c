@@ -3,6 +3,7 @@
 #include <Python.h>
 #include <stddef.h> /* for offsetof() */
 
+#include "physical_dimension_ops.h"
 #include "physical_dimension.h"
 
 static PyObject *
@@ -105,7 +106,7 @@ PhysicalDimensionObject *
 PhysicalDimension_raw_new(PyObject *dimensions)
 {
     PhysicalDimensionObject *self =
-            PyObject_New(PhysicalDimensionObject, &PhysicalDimensionObjectType);
+            PhysicalDimensionObject_new(&PhysicalDimensionObjectType, NULL, NULL);
     if (self == NULL) {
         return NULL;
     }
@@ -135,6 +136,38 @@ PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyOb
     }
 
     return 0;
+};
+
+static char *
+convert_double_to_string(double value)
+{
+    static char buffer[32];                           // Adjust size as needed
+    snprintf(buffer, sizeof(buffer), "%.6f", value);  // Format with 6 decimal places
+    return buffer;
+}
+
+static PyObject *
+PhysicalDimensionObject_repr(PhysicalDimensionObject *self)
+{
+    PyObject *list = PyList_New(DIM_COUNT);
+    if (list == NULL) {
+        return NULL;
+    }
+
+    for (int i = 0; i < DIM_COUNT; i++) {
+        PyObject *value = PyFloat_FromDouble(self->exponents[i]);
+        if (value == NULL) {
+            Py_DECREF(list);
+            return NULL;
+        }
+
+        PyList_SET_ITEM(list, i, value);  // steals reference
+    }
+
+    PyObject *result = PyUnicode_FromFormat("PhysicalDimension(%R)", list);
+
+    Py_DECREF(list);
+    return result;
 };
 
 static PyMemberDef PhysicalDimensionObject_members[] = {
@@ -173,6 +206,9 @@ PyTypeObject PhysicalDimensionObjectType = {
         .tp_new = PhysicalDimensionObject_new,
         .tp_init = PhysicalDimensionObject_init,
         .tp_flags = Py_TPFLAGS_DEFAULT,
+        .tp_repr = (reprfunc)PhysicalDimensionObject_repr,
+        .tp_str = (reprfunc)PhysicalDimensionObject_repr,
+        .tp_as_number = &PhysicalDimensionObject_as_number,
         .tp_members = PhysicalDimensionObject_members,
         .tp_methods = PhysicalDimensionObject_methods,
 };

@@ -50,9 +50,9 @@ PyInit__physicaldtype_main(void)
         goto error;
     }
 
-    if (init_physical_dtype() < 0) {
-        goto error;
-    }
+    // if (init_physical_dtype() < 0) {
+    //     goto error;
+    // }
 
     if (init_physical_scalar() < 0) {
         goto error;
@@ -62,9 +62,9 @@ PyInit__physicaldtype_main(void)
         goto error;
     }
 
-    if (PyModule_AddObjectRef(m, "PhysicalDType", (PyObject *)&PhysicalDType) < 0) {
-        goto error;
-    }
+    // if (PyModule_AddObjectRef(m, "PhysicalDType", (PyObject *)&PhysicalDType) < 0) {
+    //     goto error;
+    // }
 
     return m;
 

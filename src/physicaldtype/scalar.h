@@ -6,14 +6,14 @@
 
 typedef struct {
     PyObject_HEAD
-    double value;                                 // The scalar value
+    PyObject *value;                              // NumPy scalar
     PhysicalDimensionObject *physical_dimension;  // Associated physical dimension
 } PhysicalScalarObject;
 
 extern PyTypeObject PhysicalScalar_Type;
 
 PhysicalScalarObject *
-PhysicalScalar_raw_new(double value, PhysicalDimensionObject *physical_dimension);
+PhysicalScalar_raw_new(PyObject *value, PhysicalDimensionObject *physical_dimension);
 
 int
 init_physical_scalar(void);
