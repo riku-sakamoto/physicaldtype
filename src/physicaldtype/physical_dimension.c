@@ -19,6 +19,29 @@ PhysicalDimensionObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     return (PyObject *)self;
 };
 
+static const char *
+convert_dimension_key_to_string(int dim)
+{
+    switch (dim) {
+        case DIM_LENGTH:
+            return "L";
+        case DIM_MASS:
+            return "M";
+        case DIM_TIME:
+            return "T";
+        case DIM_CURRENT:
+            return "I";
+        case DIM_TEMPERATURE:
+            return "Theta";
+        case DIM_AMOUNT:
+            return "N";
+        case DIM_LUMINOUS_INTENSITY:
+            return "J";
+        default:
+            return NULL;  // Invalid dimension
+    }
+}
+
 static int
 parse_dimension_name_to_index(const char *dim_name)
 {
@@ -148,24 +171,37 @@ convert_double_to_string(double value)
 static PyObject *
 PhysicalDimensionObject_repr(PhysicalDimensionObject *self)
 {
-    PyObject *list = PyList_New(DIM_COUNT);
-    if (list == NULL) {
+    PyObject *res = PyDict_New();
+    if (res == NULL) {
         return NULL;
     }
 
     for (int i = 0; i < DIM_COUNT; i++) {
         PyObject *value = PyFloat_FromDouble(self->exponents[i]);
         if (value == NULL) {
-            Py_DECREF(list);
+            Py_DECREF(res);
             return NULL;
         }
 
-        PyList_SET_ITEM(list, i, value);  // steals reference
+        const char *key = convert_dimension_key_to_string(i);
+        if (key == NULL) {
+            Py_DECREF(res);
+            Py_DECREF(value);
+            return NULL;
+        }
+
+        if (PyDict_SetItemString(res, key, value) < 0) {
+            Py_DECREF(res);
+            Py_DECREF(value);
+            return NULL;
+        }
+
+        Py_DECREF(value);
     }
 
-    PyObject *result = PyUnicode_FromFormat("PhysicalDimension(%R)", list);
+    PyObject *result = PyUnicode_FromFormat("PhysicalDimension(%R)", res);
 
-    Py_DECREF(list);
+    Py_DECREF(res);
     return result;
 };
 
