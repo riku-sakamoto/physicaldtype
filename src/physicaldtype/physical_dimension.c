@@ -207,7 +207,6 @@ PyTypeObject PhysicalDimensionObjectType = {
         .tp_flags = Py_TPFLAGS_DEFAULT,
         .tp_repr = (reprfunc)PhysicalDimensionObject_repr,
         .tp_str = (reprfunc)PhysicalDimensionObject_repr,
-        .tp_as_number = &PhysicalDimensionObject_as_number,
         .tp_members = PhysicalDimensionObject_members,
         .tp_methods = PhysicalDimensionObject_methods,
 };

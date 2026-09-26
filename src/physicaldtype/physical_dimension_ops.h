@@ -10,17 +10,15 @@ bool
 physical_dimension_equal(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
 
 PhysicalDimensionObject *
-physical_dimension_add(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
+physical_dimension_resolve_add(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
 
 PhysicalDimensionObject *
-physical_dimension_subtract(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
+physical_dimension_resolve_subtract(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
 
 PhysicalDimensionObject *
-physical_dimension_multiply(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
+physical_dimension_resolve_multiply(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
 
 PhysicalDimensionObject *
-physical_dimension_divide(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
-
-extern PyNumberMethods PhysicalDimensionObject_as_number;
+physical_dimension_resolve_truediv(PhysicalDimensionObject *dim1, PhysicalDimensionObject *dim2);
 
 #endif

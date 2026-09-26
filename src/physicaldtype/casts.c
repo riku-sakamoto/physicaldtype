@@ -98,6 +98,8 @@ phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self), PyArray_DTypeMeta *NP
                                PyArray_Descr *given_descrs[2], PyArray_Descr *loop_descrs[2],
                                npy_intp *view_offset)
 {
+    loop_descrs[0] = Py_NewRef(given_descrs[0]);
+
     if (given_descrs[1] == NULL) {
         Py_INCREF(given_descrs[0]);
         loop_descrs[1] = given_descrs[0];
@@ -201,8 +203,6 @@ free_casts(PyArrayMethod_Spec **casts)
         free(spec->dtypes);
         // free(spec->slots);
         free(spec);
-
-        printf("Freed cast spec %d\n", i);
     }
 
     free(casts);

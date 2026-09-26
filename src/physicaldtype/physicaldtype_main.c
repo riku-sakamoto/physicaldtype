@@ -13,6 +13,7 @@
 #include "dtype.h"
 #include "casts.h"
 #include "scalar.h"
+#include "umath/umath.h"
 
 static PyObject *
 my_function(PyObject *self)
@@ -63,6 +64,10 @@ PyInit__physicaldtype_main(void)
     }
 
     if (PyModule_AddObjectRef(m, "PhysicalDType", (PyObject *)&PhysicalDType) < 0) {
+        goto error;
+    }
+
+    if (PhysicalDType_InitUFuncs() < 0) {
         goto error;
     }
 

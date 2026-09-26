@@ -32,6 +32,10 @@ srcs = [
     'src/physicaldtype/scalar.h',
     'src/physicaldtype/scalar_ops.c',
     'src/physicaldtype/scalar_ops.h',
+    'src/physicaldtype/umath/physical_arithmetic.c',
+    'src/physicaldtype/umath/physical_arithmetic.h',
+    'src/physicaldtype/umath/umath.c',
+    'src/physicaldtype/umath/umath.h',
 ]
 
 

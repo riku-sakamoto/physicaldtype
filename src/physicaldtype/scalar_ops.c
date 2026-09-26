@@ -10,6 +10,7 @@
 
 #include "scalar.h"
 #include "scalar_ops.h"
+#include "physical_dimension.h"
 
 static PhysicalScalarObject *
 try_cast_to_physical_scalar(PyObject *obj)
@@ -43,8 +44,8 @@ physical_scalar_add(PyObject *a, PyObject *b)
         return NULL;
     }
 
-    PhysicalDimensionObject *result_dim =
-            PyNumber_Add(scalar_a->physical_dimension, scalar_b->physical_dimension);
+    PhysicalDimensionObject *result_dim = physical_dimension_resolve_add(
+            scalar_a->physical_dimension, scalar_b->physical_dimension);
     if (result_dim == NULL) {
         return NULL;
     }
@@ -70,8 +71,8 @@ physical_scalar_subtract(PyObject *a, PyObject *b)
         return NULL;
     }
 
-    PhysicalDimensionObject *result_dim =
-            PyNumber_Subtract(scalar_a->physical_dimension, scalar_b->physical_dimension);
+    PhysicalDimensionObject *result_dim = physical_dimension_resolve_subtract(
+            scalar_a->physical_dimension, scalar_b->physical_dimension);
     if (result_dim == NULL) {
         return NULL;
     }
@@ -94,8 +95,8 @@ physical_scalar_multiply(PyObject *a, PyObject *b)
         return NULL;
     }
 
-    PhysicalDimensionObject *result_dim =
-            PyNumber_Multiply(scalar_a->physical_dimension, scalar_b->physical_dimension);
+    PhysicalDimensionObject *result_dim = physical_dimension_resolve_multiply(
+            scalar_a->physical_dimension, scalar_b->physical_dimension);
     if (result_dim == NULL) {
         return NULL;
     }
@@ -118,8 +119,8 @@ physical_scalar_divide(PyObject *a, PyObject *b)
         return NULL;
     }
 
-    PhysicalDimensionObject *result_dim =
-            PyNumber_TrueDivide(scalar_a->physical_dimension, scalar_b->physical_dimension);
+    PhysicalDimensionObject *result_dim = physical_dimension_resolve_truediv(
+            scalar_a->physical_dimension, scalar_b->physical_dimension);
     if (result_dim == NULL) {
         return NULL;
     }
