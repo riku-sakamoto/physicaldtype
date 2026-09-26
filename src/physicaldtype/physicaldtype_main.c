@@ -15,14 +15,7 @@
 #include "scalar.h"
 #include "umath/umath.h"
 
-static PyObject *
-my_function(PyObject *self)
-{
-    return PyUnicode_FromString("Hello from C!");
-};
-
 static PyMethodDef module_methods[] = {
-        {"my_function", (PyCFunction)my_function, METH_NOARGS, "Returns a greeting from C."},
         {NULL, NULL, 0, NULL}  // Sentinel
 };
 
