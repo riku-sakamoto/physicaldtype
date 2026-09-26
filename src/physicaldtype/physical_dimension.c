@@ -115,7 +115,6 @@ PhysicalDimension_raw_new(PyObject *dimensions)
         Py_DECREF(self);
         return NULL;
     }
-
     return self;
 }
 

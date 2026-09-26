@@ -7,7 +7,7 @@
 #define NPY_TARGET_VERSION NPY_2_0_API_VERSION
 #define NO_IMPORT_ARRAY
 #define NO_IMPORT_UFUNC
-#include "numpy/arrayobject.h"
+#include "numpy/ndarrayobject.h"
 #include "numpy/dtype_api.h"
 #include "numpy/ndarraytypes.h"
 
@@ -111,6 +111,28 @@ phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self), PyArray_DTypeMeta *NP
     return NPY_SAFE_CASTING;
 }
 
+static int
+phy_to_phy_get_loop(PyArrayMethod_Context *context, int aligned, int NPY_UNUSED(move_references),
+                    const npy_intp *strides, PyArrayMethod_StridedLoop **out_loop,
+                    NpyAuxData **out_transferdata, NPY_ARRAYMETHOD_FLAGS *flags)
+{
+    // For now, we can just use the same loop as phy_to_float64_get_loop
+    int contig = (strides[0] == sizeof(double) && strides[1] == sizeof(double));
+
+    if (aligned && contig) {
+        *out_loop = (PyArrayMethod_StridedLoop *)&phy_to_float64_contiguous;
+    }
+    else if (aligned) {
+        *out_loop = (PyArrayMethod_StridedLoop *)&phy_to_float64_strided;
+    }
+    else {
+        *out_loop = (PyArrayMethod_StridedLoop *)&phy_to_float64_unaligned;
+    }
+
+    *flags = 0;
+    return 0;
+}
+
 /*
  * NumPy currently allows NULL for the own DType/"cls".
  */
@@ -118,7 +140,7 @@ static PyArray_DTypeMeta *phy2phy_dtypes[2] = {NULL, NULL};
 
 static PyType_Slot phy2phy_slots[] = {
         {NPY_METH_resolve_descriptors, &phy_to_phy_resolve_descriptors},
-        // {NPY_METH_get_loop, &phy_to_phy_get_loop},
+        {NPY_METH_get_loop, &phy_to_phy_get_loop},
         {0, NULL}};
 
 static PyArrayMethod_Spec PhyToPhyCastSpec = {
@@ -159,4 +181,30 @@ init_casts(void)
     casts[2] = NULL;
 
     return casts;
+}
+
+void
+free_casts(PyArrayMethod_Spec **casts)
+{
+    if (casts == NULL) {
+        return;
+    }
+
+    // NOTE: i = 0 is the PhyToPhyCastSpec, which is a static variable and should not be freed.
+    // TODO: Consider refactoring to make all casts dynamically allocated for consistency.
+    for (int i = 1; casts[i] != NULL; i++) {
+        PyArrayMethod_Spec *spec = casts[i];
+        if (spec == NULL) {
+            continue;
+        }
+
+        free(spec->dtypes);
+        // free(spec->slots);
+        free(spec);
+
+        printf("Freed cast spec %d\n", i);
+    }
+
+    free(casts);
+    return;
 }
