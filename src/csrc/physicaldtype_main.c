@@ -19,14 +19,14 @@ static PyMethodDef module_methods[] = {
         {NULL, NULL, 0, NULL}  // Sentinel
 };
 
-static PyModuleDef_Slot module_slots[] = {
-        {0, NULL}  // Sentinel
-};
+// static PyModuleDef_Slot module_slots[] = {
+//         {0, NULL}  // Sentinel
+// };
 
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT, .m_name = "_physicaldtype_main", .m_size = -1,
         .m_methods = module_methods,
-        // .m_slots =
+        // .m_slots = module_slots,
 };
 
 PyMODINIT_FUNC
@@ -38,6 +38,10 @@ PyInit__physicaldtype_main(void)
     PyObject *m = PyModule_Create(&moduledef);
     if (m == NULL) {
         return NULL;
+    }
+
+    if (PyType_Ready(&PhysicalDimensionObjectType) < 0) {
+        goto error;
     }
 
     if (PyModule_AddType(m, &PhysicalDimensionObjectType) < 0) {

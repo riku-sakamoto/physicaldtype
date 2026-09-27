@@ -2,6 +2,7 @@
 
 #define PY_ARRAY_UNIQUE_SYMBOL physicaldtype_ARRAY_API
 #define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION
+#define NPY_TARGET_VERSION NPY_2_4_API_VERSION
 #define NO_IMPORT_ARRAY
 
 #include "numpy/arrayobject.h"
@@ -40,20 +41,22 @@ PhysicalScalar_raw_new(PyObject *value, PhysicalDimensionObject *physical_dimens
 
     PhysicalScalarObject *self = PyObject_New(PhysicalScalarObject, &PhysicalScalar_Type);
     if (self == NULL) {
+        Py_DECREF(descr);
         return NULL;
     }
 
     self->value = Py_NewRef(value);
-    self->physical_dimension = Py_NewRef(physical_dimension);
+    self->physical_dimension = (PhysicalDimensionObject *)Py_NewRef(physical_dimension);
+    Py_DECREF(descr);
     return self;
 }
 
 static PyObject *
-PhysicalScalar_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
+PhysicalScalar_new(PyTypeObject *Py_UNUSED(cls), PyObject *args, PyObject *kwargs)
 {
     PyObject *value = NULL;
     PyObject *physical_dimension = NULL;
-    static char *kwlist[] = {"value", "dimension", NULL};
+    static char *kwlist[] = {"value", "physical_dimension", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", kwlist, &value, &physical_dimension)) {
         return NULL;
@@ -65,7 +68,9 @@ PhysicalScalar_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    return (PyObject *)PhysicalScalar_raw_new(value, dimension);
+    PyObject *res = (PyObject *)PhysicalScalar_raw_new(value, dimension);
+    Py_DECREF(dimension);
+    return res;
 }
 
 static void
@@ -126,14 +131,14 @@ static PyMethodDef PhysicalScalarObject_methods[] = {
 };
 
 static PyObject *
-PhysicalScalarObject_get_value(PhysicalScalarObject *self, void *closure)
+PhysicalScalarObject_get_value(PhysicalScalarObject *self, void *Py_UNUSED(closure))
 {
     Py_INCREF(self->value);
     return self->value;
 }
 
 static PyObject *
-PhysicalScalarObject_get_dimension(PhysicalScalarObject *self, void *closure)
+PhysicalScalarObject_get_dimension(PhysicalScalarObject *self, void *Py_UNUSED(closure))
 {
     Py_INCREF(self->physical_dimension);
     return (PyObject *)self->physical_dimension;
@@ -142,7 +147,7 @@ PhysicalScalarObject_get_dimension(PhysicalScalarObject *self, void *closure)
 static PyGetSetDef PhysicalScalarObject_getset[] = {
         {"value", (getter)PhysicalScalarObject_get_value, NULL,
          "Get the value of the PhysicalScalarObject", NULL},
-        {"dimension", (getter)PhysicalScalarObject_get_dimension, NULL,
+        {"physical_dimension", (getter)PhysicalScalarObject_get_dimension, NULL,
          "Get the physical dimension of the PhysicalScalarObject", NULL},
         // {"dtype", (getter)PhysicalScalarObject_get_dtype, NULL, "Get the dtype of the
         // PhysicalScalarObject", NULL},
@@ -168,6 +173,6 @@ PyTypeObject PhysicalScalar_Type = {
 int
 init_physical_scalar(void)
 {
-    PhysicalScalar_Type.tp_base = &PyFloatingArrType_Type;
+    // PhysicalScalar_Type.tp_base = &PyFloatingArrType_Type;
     return PyType_Ready(&PhysicalScalar_Type);
 }

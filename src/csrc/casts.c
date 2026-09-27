@@ -15,12 +15,13 @@
 #include "dtype.h"
 
 static int
-phy_to_float64_contiguous(char **args, npy_intp const *dimensions, npy_intp const *strides,
+phy_to_float64_contiguous(PyArrayMethod_Context *NPY_UNUSED(context), char *const *data,
+                          npy_intp const *dimensions, npy_intp const *NPY_UNUSED(strides),
                           NpyAuxData *NPY_UNUSED(auxdata))
 {
     npy_intp N = dimensions[0];
-    double *in = (double *)args[0];
-    double *out = (double *)args[1];
+    double *in = (double *)data[0];
+    double *out = (double *)data[1];
 
     for (npy_intp i = 0; i < N; i++) {
         out[i] = in[i];
@@ -29,12 +30,13 @@ phy_to_float64_contiguous(char **args, npy_intp const *dimensions, npy_intp cons
 }
 
 static int
-phy_to_float64_strided(char **args, npy_intp const *dimensions, npy_intp const *strides,
+phy_to_float64_strided(PyArrayMethod_Context *NPY_UNUSED(context), char *const *data,
+                       npy_intp const *dimensions, npy_intp const *strides,
                        NpyAuxData *NPY_UNUSED(auxdata))
 {
     npy_intp N = dimensions[0];
-    char *in = args[0];
-    char *out = args[1];
+    char *in = data[0];
+    char *out = data[1];
     npy_intp in_stride = strides[0];
     npy_intp out_stride = strides[1];
 
@@ -48,12 +50,13 @@ phy_to_float64_strided(char **args, npy_intp const *dimensions, npy_intp const *
 }
 
 static int
-phy_to_float64_unaligned(char **args, npy_intp const *dimensions, npy_intp const *strides,
+phy_to_float64_unaligned(PyArrayMethod_Context *NPY_UNUSED(context), char *const *data,
+                         npy_intp const *dimensions, npy_intp const *strides,
                          NpyAuxData *NPY_UNUSED(auxdata))
 {
     npy_intp N = dimensions[0];
-    char *in = args[0];
-    char *out = args[1];
+    char *in = data[0];
+    char *out = data[1];
     npy_intp in_stride = strides[0];
     npy_intp out_stride = strides[1];
 
@@ -70,10 +73,10 @@ phy_to_float64_unaligned(char **args, npy_intp const *dimensions, npy_intp const
 }
 
 static int
-phy_to_float64_get_loop(PyArrayMethod_Context *context, int aligned,
+phy_to_float64_get_loop(PyArrayMethod_Context *NPY_UNUSED(context), int aligned,
                         int NPY_UNUSED(move_references), const npy_intp *strides,
-                        PyArrayMethod_StridedLoop **out_loop, NpyAuxData **out_transferdata,
-                        NPY_ARRAYMETHOD_FLAGS *flags)
+                        PyArrayMethod_StridedLoop **out_loop,
+                        NpyAuxData **NPY_UNUSED(out_transferdata), NPY_ARRAYMETHOD_FLAGS *flags)
 {
     int contig = (strides[0] == sizeof(double) && strides[1] == sizeof(double));
 
@@ -96,27 +99,29 @@ phy_to_float64_get_loop(PyArrayMethod_Context *context, int aligned,
 static NPY_CASTING
 phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self), PyArray_DTypeMeta *NPY_UNUSED(dtypes[2]),
                                PyArray_Descr *given_descrs[2], PyArray_Descr *loop_descrs[2],
-                               npy_intp *view_offset)
+                               npy_intp *NPY_UNUSED(view_offset))
 {
-    loop_descrs[0] = Py_NewRef(given_descrs[0]);
+    loop_descrs[0] = given_descrs[0];
+    Py_INCREF(loop_descrs[0]);
 
     if (given_descrs[1] == NULL) {
-        Py_INCREF(given_descrs[0]);
         loop_descrs[1] = given_descrs[0];
+        Py_INCREF(given_descrs[0]);
     }
     else {
         // HACK: Need to convert with proper casting
-        Py_INCREF(given_descrs[1]);
         loop_descrs[1] = given_descrs[1];
+        Py_INCREF(given_descrs[1]);
     }
 
     return NPY_SAFE_CASTING;
 }
 
 static int
-phy_to_phy_get_loop(PyArrayMethod_Context *context, int aligned, int NPY_UNUSED(move_references),
-                    const npy_intp *strides, PyArrayMethod_StridedLoop **out_loop,
-                    NpyAuxData **out_transferdata, NPY_ARRAYMETHOD_FLAGS *flags)
+phy_to_phy_get_loop(PyArrayMethod_Context *NPY_UNUSED(context), int aligned,
+                    int NPY_UNUSED(move_references), const npy_intp *strides,
+                    PyArrayMethod_StridedLoop **out_loop, NpyAuxData **NPY_UNUSED(out_transferdata),
+                    NPY_ARRAYMETHOD_FLAGS *flags)
 {
     // For now, we can just use the same loop as phy_to_float64_get_loop
     int contig = (strides[0] == sizeof(double) && strides[1] == sizeof(double));
@@ -157,7 +162,7 @@ static PyArrayMethod_Spec PhyToPhyCastSpec = {
 
 // #endregion
 
-static PyType_Slot p2f_slots[] = {{NPY_METH_get_loop, &phy_to_float64_get_loop}, {0, NULL}};
+static PyType_Slot p2f_slots[] = {{NPY_METH_get_loop, (void *)&phy_to_float64_get_loop}, {0, NULL}};
 
 static char *p2f_name = "cast_PhysicalDType_to_Float64";
 

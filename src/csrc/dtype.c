@@ -33,7 +33,7 @@ new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension)
     self->base.elsize = sizeof(double);  // Assuming we are using double for storage
     self->base.alignment = _Alignof(double);
     return self;
-};
+}
 
 static double
 get_value(PyObject *scalar)
@@ -162,7 +162,7 @@ physicaldtype_ensure_canonical(PhysicalDTypeObject *self)
     // Ensure that the PhysicalDTypeObject is in its canonical form
     Py_INCREF(self);
     return self;
-};
+}
 
 // https://numpy.org/doc/stable/reference/c-api/array.html#slot-ids-and-api-function-typedefs
 static PyType_Slot PhysicalDType_Slots[] = {
@@ -175,7 +175,7 @@ static PyType_Slot PhysicalDType_Slots[] = {
         {0, NULL}};
 
 PyObject *
-physicaldtype_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+physicaldtype_new(PyTypeObject *Py_UNUSED(type), PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"physical_dimension", NULL};
 
@@ -194,20 +194,20 @@ physicaldtype_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     PyObject *res = (PyObject *)new_physicaldtype_instance(dimension);
     Py_DECREF(dimension);
     return res;
-};
+}
 
 static void
 physicaltype_dealloc(PhysicalDTypeObject *self)
 {
     Py_CLEAR(self->physical_dimension);
     PyArrayDescr_Type.tp_dealloc((PyObject *)self);
-};
+}
 
 static PyObject *
 physicaldtype_repr(PhysicalDTypeObject *self)
 {
     return PyUnicode_FromFormat("PhysicalDType('%R')", self->physical_dimension);
-};
+}
 
 static PyMemberDef PhysicalDType_members[] = {
         {"physical_dimension", T_OBJECT_EX, offsetof(PhysicalDTypeObject, physical_dimension),
@@ -216,17 +216,15 @@ static PyMemberDef PhysicalDType_members[] = {
 };
 
 // https://numpy.org/doc/stable/reference/c-api/types-and-structures.html#c.PyArray_DTypeMeta
-PyArray_DTypeMeta PhysicalDType = {
-        {{
-                PyVarObject_HEAD_INIT(NULL, 0).tp_name = "physicaldtype.PhysicalDType",
-                .tp_basicsize = sizeof(PhysicalDTypeObject),
-                .tp_new = physicaldtype_new,
-                .tp_dealloc = (destructor)physicaltype_dealloc,
-                .tp_repr = (reprfunc)physicaldtype_repr,
-                .tp_str = (reprfunc)physicaldtype_repr,
-                .tp_members = PhysicalDType_members,
-        }},
-};
+PyArray_DTypeMeta PhysicalDType = {{{
+        PyVarObject_HEAD_INIT(NULL, 0).tp_name = "physicaldtype.PhysicalDType",
+        .tp_basicsize = sizeof(PhysicalDTypeObject),
+        .tp_new = physicaldtype_new,
+        .tp_dealloc = (destructor)physicaltype_dealloc,
+        .tp_repr = (reprfunc)physicaldtype_repr,
+        .tp_str = (reprfunc)physicaldtype_repr,
+        .tp_members = PhysicalDType_members,
+}}};
 
 int
 init_physical_dtype(void)

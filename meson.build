@@ -1,5 +1,16 @@
 project('physicaldtype', 'c')
 
+add_project_arguments(
+  '-Wall',
+  '-Wextra',
+  '-Werror=implicit-function-declaration',
+  '-Werror=incompatible-pointer-types',
+  '-Werror=return-type',
+  '-Werror=int-conversion',
+  '-Wno-missing-field-initializers',
+  language: 'c',
+)
+
 
 py = import('python').find_installation(pure: false)
 
@@ -19,32 +30,34 @@ includes = include_directories(
   ]
 )
 srcs = [
-    'src/physicaldtype/physicaldtype_main.c',
-    'src/physicaldtype/physical_dimension.c',
-    'src/physicaldtype/physical_dimension.h',
-    'src/physicaldtype/physical_dimension_ops.c',
-    'src/physicaldtype/physical_dimension_ops.h',
-    'src/physicaldtype/dtype.c',
-    'src/physicaldtype/dtype.h',
-    'src/physicaldtype/casts.c',
-    'src/physicaldtype/casts.h',
-    'src/physicaldtype/scalar.c',
-    'src/physicaldtype/scalar.h',
-    'src/physicaldtype/scalar_ops.c',
-    'src/physicaldtype/scalar_ops.h',
-    'src/physicaldtype/umath/physical_arithmetic.c',
-    'src/physicaldtype/umath/physical_arithmetic.h',
-    'src/physicaldtype/umath/umath.c',
-    'src/physicaldtype/umath/umath.h',
+    'src/csrc/physicaldtype_main.c',
+    'src/csrc/physical_dimension.c',
+    'src/csrc/physical_dimension.h',
+    'src/csrc/physical_dimension_ops.c',
+    'src/csrc/physical_dimension_ops.h',
+    'src/csrc/dtype.c',
+    'src/csrc/dtype.h',
+    'src/csrc/casts.c',
+    'src/csrc/casts.h',
+    'src/csrc/scalar.c',
+    'src/csrc/scalar.h',
+    'src/csrc/scalar_ops.c',
+    'src/csrc/scalar_ops.h',
+    'src/csrc/umath/physical_arithmetic.c',
+    'src/csrc/umath/physical_arithmetic.h',
+    'src/csrc/umath/umath.c',
+    'src/csrc/umath/umath.h',
 ]
 
 
 py.install_sources(
   [
-    'src/__init__.py',
+    'src/physicaldtype/__init__.py',
+    'src/physicaldtype/__init__.pyi',
+    'src/physicaldtype/py.typed',
   ],
   subdir: 'physicaldtype',
-  pure: false
+  pure: false,
 )
 
 py.extension_module(

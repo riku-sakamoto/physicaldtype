@@ -56,6 +56,8 @@ physical_dimension_resolve_subtract(PhysicalDimensionObject *dim1, PhysicalDimen
     for (int i = 0; i < DIM_COUNT; i++) {
         result->exponents[i] = dim1->exponents[i];
     }
+
+    return result;
 }
 
 PhysicalDimensionObject *

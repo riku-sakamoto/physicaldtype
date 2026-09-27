@@ -18,7 +18,7 @@
 
 static int
 translate_given_descrs(int nin, int nout,
-                       PyArray_DTypeMeta *NPY_UNUSED(wrapped_dtypes[]),
+                       PyArray_DTypeMeta *const NPY_UNUSED(wrapped_dtypes[]),
                        PyArray_Descr *const given_descrs[],
                        PyArray_Descr * new_descrs[])
 {
@@ -35,10 +35,10 @@ translate_given_descrs(int nin, int nout,
 }
 
 static int
-translate_add_loop_descrs(int nin, int NPY_UNUSED(nout),
-                      PyArray_DTypeMeta *NPY_UNUSED(new_dtypes[]),
+translate_add_loop_descrs(int NPY_UNUSED(nin), int NPY_UNUSED(nout),
+                      PyArray_DTypeMeta *const NPY_UNUSED(new_dtypes[]),
                       PyArray_Descr *const given_descrs[],
-                      PyArray_Descr *const original_descrs[],
+                      PyArray_Descr *NPY_UNUSED(original_descrs[]),
                       PyArray_Descr *loop_descrs[])
 {
     PhysicalDTypeObject *left =
@@ -65,10 +65,10 @@ translate_add_loop_descrs(int nin, int NPY_UNUSED(nout),
 }
 
 static int
-translate_multiply_loop_descrs(int nin, int NPY_UNUSED(nout),
-                      PyArray_DTypeMeta *NPY_UNUSED(new_dtypes[]),
+translate_multiply_loop_descrs(int NPY_UNUSED(nin), int NPY_UNUSED(nout),
+                      PyArray_DTypeMeta * const NPY_UNUSED(new_dtypes[]),
                       PyArray_Descr * const given_descrs[],
-                      PyArray_Descr * const original_descrs[],
+                      PyArray_Descr *NPY_UNUSED(original_descrs[]),
                       PyArray_Descr *loop_descrs[])
 {
     PhysicalDTypeObject *left =

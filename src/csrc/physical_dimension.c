@@ -2,12 +2,14 @@
 
 #include <Python.h>
 #include <stddef.h> /* for offsetof() */
+#include <structmember.h>
 
 #include "physical_dimension_ops.h"
 #include "physical_dimension.h"
 
 static PyObject *
-PhysicalDimensionObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+PhysicalDimensionObject_new(PyTypeObject *type, PyObject *Py_UNUSED(args),
+                            PyObject *Py_UNUSED(kwds))
 {
     PhysicalDimensionObject *self;
     self = (PhysicalDimensionObject *)type->tp_alloc(type, 0);
@@ -17,7 +19,7 @@ PhysicalDimensionObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         }
     }
     return (PyObject *)self;
-};
+}
 
 static const char *
 convert_dimension_key_to_string(int dim)
@@ -67,7 +69,7 @@ parse_dimension_name_to_index(const char *dim_name)
         return DIM_LUMINOUS_INTENSITY;
     }
     return -1;  // Invalid dimension name
-};
+}
 
 static int
 PhysicalDimension_raw_init(PhysicalDimensionObject *self, PyObject *dimensions)
@@ -128,13 +130,13 @@ PhysicalDimension_raw_init(PhysicalDimensionObject *self, PyObject *dimensions)
 PhysicalDimensionObject *
 PhysicalDimension_raw_new(PyObject *dimensions)
 {
-    PhysicalDimensionObject *self =
-            PhysicalDimensionObject_new(&PhysicalDimensionObjectType, NULL, NULL);
+    PhysicalDimensionObject *self = (PhysicalDimensionObject *)PhysicalDimensionObject_new(
+            &PhysicalDimensionObjectType, NULL, NULL);
     if (self == NULL) {
         return NULL;
     }
 
-    if (PhysicalDimension_raw_init(self, dimensions) == -1) {
+    if (PhysicalDimension_raw_init(self, dimensions) < 0) {
         Py_DECREF(self);
         return NULL;
     }
@@ -142,7 +144,7 @@ PhysicalDimension_raw_new(PyObject *dimensions)
 }
 
 static int
-PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyObject *kwds)
+PhysicalDimensionObject_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"exponents", NULL};
     PyObject *exponents_obj = NULL;
@@ -153,19 +155,11 @@ PhysicalDimensionObject_init(PhysicalDimensionObject *self, PyObject *args, PyOb
         return -1;
     }
 
-    if (PhysicalDimension_raw_init(self, exponents_obj) == -1) {
+    if (PhysicalDimension_raw_init((PhysicalDimensionObject *)self, exponents_obj) == -1) {
         return -1;
     }
 
     return 0;
-};
-
-static char *
-convert_double_to_string(double value)
-{
-    static char buffer[32];                           // Adjust size as needed
-    snprintf(buffer, sizeof(buffer), "%.6f", value);  // Format with 6 decimal places
-    return buffer;
 }
 
 static PyObject *
@@ -203,11 +197,9 @@ PhysicalDimensionObject_repr(PhysicalDimensionObject *self)
 
     Py_DECREF(res);
     return result;
-};
+}
 
 static PyMemberDef PhysicalDimensionObject_members[] = {
-        // {"exponents", T_DOUBLE, offsetof(PhysicalDimensionObject, exponents), 0, "Exponents for
-        // each dimension"},
         {NULL} /* Sentinel */
 };
 
@@ -226,11 +218,37 @@ PhysicalDimensionObject_get_exponent(PhysicalDimensionObject *self, PyObject *ar
     }
 
     return PyFloat_FromDouble(self->exponents[index]);
-};
+}
 
 static PyMethodDef PhysicalDimensionObject_methods[] = {
         {"get_exponent", (PyCFunction)PhysicalDimensionObject_get_exponent, METH_VARARGS,
          "Get the exponent for a given dimension name"},
+        {NULL} /* Sentinel */
+};
+
+static PyObject *
+PhysicalDimensionObject_get_exponents(PhysicalDimensionObject *self, void *Py_UNUSED(closure))
+{
+    PyObject *exponents_tuple = PyTuple_New(DIM_COUNT);
+    if (exponents_tuple == NULL) {
+        return NULL;
+    }
+
+    for (int i = 0; i < DIM_COUNT; i++) {
+        PyObject *value = PyFloat_FromDouble(self->exponents[i]);
+        if (value == NULL) {
+            Py_DECREF(exponents_tuple);
+            return NULL;
+        }
+        PyTuple_SET_ITEM(exponents_tuple, i, value);  // Steals reference to value
+    }
+
+    return exponents_tuple;
+}
+
+static PyGetSetDef PhysicalDimensionObject_getset[] = {
+        {"exponents", (getter)PhysicalDimensionObject_get_exponents, NULL,
+         "Exponents for each physical dimension", NULL},
         {NULL} /* Sentinel */
 };
 
@@ -245,4 +263,5 @@ PyTypeObject PhysicalDimensionObjectType = {
         .tp_str = (reprfunc)PhysicalDimensionObject_repr,
         .tp_members = PhysicalDimensionObject_members,
         .tp_methods = PhysicalDimensionObject_methods,
+        .tp_getset = PhysicalDimensionObject_getset,
 };

@@ -19,3 +19,4 @@ lint:
 .PHONY: build
 build:
 	uv build --wheel
+
