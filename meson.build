@@ -1,8 +1,11 @@
-project('physicaldtype', 'c')
+project(
+  'physicaldtype',
+  'c',
+  version: '0.0.1',
+  default_options: ['warning_level=2'],
+)
 
 add_project_arguments(
-  '-Wall',
-  '-Wextra',
   '-Werror=implicit-function-declaration',
   '-Werror=incompatible-pointer-types',
   '-Werror=return-type',
@@ -32,21 +35,13 @@ includes = include_directories(
 srcs = [
     'src/csrc/physicaldtype_main.c',
     'src/csrc/physical_dimension.c',
-    'src/csrc/physical_dimension.h',
     'src/csrc/physical_dimension_ops.c',
-    'src/csrc/physical_dimension_ops.h',
     'src/csrc/dtype.c',
-    'src/csrc/dtype.h',
     'src/csrc/casts.c',
-    'src/csrc/casts.h',
     'src/csrc/scalar.c',
-    'src/csrc/scalar.h',
     'src/csrc/scalar_ops.c',
-    'src/csrc/scalar_ops.h',
     'src/csrc/umath/physical_arithmetic.c',
-    'src/csrc/umath/physical_arithmetic.h',
     'src/csrc/umath/umath.c',
-    'src/csrc/umath/umath.h',
 ]
 
 

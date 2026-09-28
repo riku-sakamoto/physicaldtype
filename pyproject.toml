@@ -1,22 +1,48 @@
 [build-system]
 build-backend = 'mesonpy'
 requires = [
-    "meson-python",
+    "meson-python>=0.18",
     "wheel",
-    "numpy"
+    "numpy>=2.4"
 ]
 
 [project]
 name = "physicaldtype"
-version = "0.1.0"
-description = "A simple tutorial package"
-requires-python = ">=3.11,<=3.14"
+dynamic = ["version"]
+description = "NumPy parametric dtype for physical dimensions and units"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
 authors = [
-    {name = "Riku", email = "rikusaka03@gmail.com"},
+    { name = "Riku Sakamoto", email = "rikusaka03@gmail.com" },
+]
+keywords = ["numpy", "dtype", "units", "physical-dimensions", "scientific-computing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: C",
+    "Topic :: Scientific/Engineering",
 ]
 dependencies = [
     "numpy>=2.4",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "hypothesis>=6.168.1",
+    "pytest>=9.1.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/riku-sakamoto/physicaldtype"
+Repository = "https://github.com/riku-sakamoto/physicaldtype"
+Issues = "https://github.com/riku-sakamoto/physicaldtype/issues"
 
 [dependency-groups]
 dev = [

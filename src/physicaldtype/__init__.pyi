@@ -1,6 +1,9 @@
 import abc
+from typing import Literal
 
 physical_dimension_names: tuple[str, str, str, str, str, str, str]
+
+type PhysicalDimensionKey = Literal["L", "M", "T", "I", "Theta", "N", "J"]
 
 class PhysicalDimension(abc.ABC):
     @property
@@ -16,7 +19,7 @@ class PhysicalDimension(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_exponent(self, dimension: str) -> float:
+    def get_exponent(self, dimension: PhysicalDimensionKey) -> float:
         """
         Returns the exponent of the specified physical dimension.
 
@@ -30,7 +33,7 @@ class PhysicalDimension(abc.ABC):
 
 class PhysicalScalar(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, value: float, dimension: PhysicalDimension):
+    def __init__(self, value: float, dimension: dict[PhysicalDimensionKey, float]):
         pass
 
     @property
@@ -44,6 +47,10 @@ class PhysicalScalar(abc.ABC):
         pass
 
 class PhysicalDType(abc.ABC):
+    @abc.abstractmethod
+    def __init__(self, dimension: dict[PhysicalDimensionKey, float]):
+        pass
+
     @property
     @abc.abstractmethod
     def physical_dimension(self) -> PhysicalDimension:
