@@ -1,10 +1,7 @@
 import numpy as np
-import pytest
 
-from typing import Callable, Any
-import operator
-from physicaldtype import PhysicalDimension, physical_dimension_names, PhysicalDType
-from hypothesis import given, assume
+from physicaldtype import physical_dimension_names, PhysicalDType
+from hypothesis import given
 from hypothesis import strategies as st
 
 
