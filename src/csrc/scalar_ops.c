@@ -14,7 +14,7 @@
 #include "physical_dimension_ops.h"
 
 static PhysicalScalarObject *
-try_cast_to_physical_scalar(PyObject *obj)
+try_cast_to_new_physical_scalar(PyObject *obj)
 {
     if (PyObject_TypeCheck(obj, &PhysicalScalar_Type)) {
         return (PhysicalScalarObject *)Py_NewRef(obj);
@@ -38,8 +38,8 @@ try_cast_to_physical_scalar(PyObject *obj)
 static PyObject *
 physical_scalar_add(PyObject *a, PyObject *b)
 {
-    PhysicalScalarObject *scalar_a = try_cast_to_physical_scalar(a);
-    PhysicalScalarObject *scalar_b = try_cast_to_physical_scalar(b);
+    PhysicalScalarObject *scalar_a = try_cast_to_new_physical_scalar(a);
+    PhysicalScalarObject *scalar_b = try_cast_to_new_physical_scalar(b);
 
     if (scalar_a == NULL || scalar_b == NULL) {
         return NULL;
@@ -48,9 +48,13 @@ physical_scalar_add(PyObject *a, PyObject *b)
     PhysicalDimensionObject *result_dim = physical_dimension_resolve_add(
             scalar_a->physical_dimension, scalar_b->physical_dimension);
     if (result_dim == NULL) {
+        Py_DECREF(scalar_a);
+        Py_DECREF(scalar_b);
         return NULL;
     }
     PyObject *result_value = PyNumber_Add(scalar_a->value, scalar_b->value);
+    Py_DECREF(scalar_a);
+    Py_DECREF(scalar_b);
 
     PhysicalScalarObject *new = PhysicalScalar_raw_new(result_value, result_dim);
     Py_DECREF(result_value);
@@ -61,8 +65,8 @@ physical_scalar_add(PyObject *a, PyObject *b)
 static PyObject *
 physical_scalar_subtract(PyObject *a, PyObject *b)
 {
-    PhysicalScalarObject *scalar_a = try_cast_to_physical_scalar(a);
-    PhysicalScalarObject *scalar_b = try_cast_to_physical_scalar(b);
+    PhysicalScalarObject *scalar_a = try_cast_to_new_physical_scalar(a);
+    PhysicalScalarObject *scalar_b = try_cast_to_new_physical_scalar(b);
 
     if (scalar_a == NULL || scalar_b == NULL) {
         return NULL;
@@ -71,10 +75,14 @@ physical_scalar_subtract(PyObject *a, PyObject *b)
     PhysicalDimensionObject *result_dim = physical_dimension_resolve_subtract(
             scalar_a->physical_dimension, scalar_b->physical_dimension);
     if (result_dim == NULL) {
+        Py_DECREF(scalar_a);
+        Py_DECREF(scalar_b);
         return NULL;
     }
 
     PyObject *result_value = PyNumber_Subtract(scalar_a->value, scalar_b->value);
+    Py_DECREF(scalar_a);
+    Py_DECREF(scalar_b);
 
     PhysicalScalarObject *new = PhysicalScalar_raw_new(result_value, result_dim);
     Py_DECREF(result_value);
@@ -85,8 +93,8 @@ physical_scalar_subtract(PyObject *a, PyObject *b)
 static PyObject *
 physical_scalar_multiply(PyObject *a, PyObject *b)
 {
-    PhysicalScalarObject *scalar_a = try_cast_to_physical_scalar(a);
-    PhysicalScalarObject *scalar_b = try_cast_to_physical_scalar(b);
+    PhysicalScalarObject *scalar_a = try_cast_to_new_physical_scalar(a);
+    PhysicalScalarObject *scalar_b = try_cast_to_new_physical_scalar(b);
 
     if (scalar_a == NULL || scalar_b == NULL) {
         return NULL;
@@ -95,10 +103,14 @@ physical_scalar_multiply(PyObject *a, PyObject *b)
     PhysicalDimensionObject *result_dim = physical_dimension_resolve_multiply(
             scalar_a->physical_dimension, scalar_b->physical_dimension);
     if (result_dim == NULL) {
+        Py_DECREF(scalar_a);
+        Py_DECREF(scalar_b);
         return NULL;
     }
 
     PyObject *result_value = PyNumber_Multiply(scalar_a->value, scalar_b->value);
+    Py_DECREF(scalar_a);
+    Py_DECREF(scalar_b);
 
     PhysicalScalarObject *new = PhysicalScalar_raw_new(result_value, result_dim);
     Py_DECREF(result_value);
@@ -109,8 +121,8 @@ physical_scalar_multiply(PyObject *a, PyObject *b)
 static PyObject *
 physical_scalar_divide(PyObject *a, PyObject *b)
 {
-    PhysicalScalarObject *scalar_a = try_cast_to_physical_scalar(a);
-    PhysicalScalarObject *scalar_b = try_cast_to_physical_scalar(b);
+    PhysicalScalarObject *scalar_a = try_cast_to_new_physical_scalar(a);
+    PhysicalScalarObject *scalar_b = try_cast_to_new_physical_scalar(b);
 
     if (scalar_a == NULL || scalar_b == NULL) {
         return NULL;
@@ -119,10 +131,14 @@ physical_scalar_divide(PyObject *a, PyObject *b)
     PhysicalDimensionObject *result_dim = physical_dimension_resolve_truediv(
             scalar_a->physical_dimension, scalar_b->physical_dimension);
     if (result_dim == NULL) {
+        Py_DECREF(scalar_a);
+        Py_DECREF(scalar_b);
         return NULL;
     }
 
     PyObject *result_value = PyNumber_TrueDivide(scalar_a->value, scalar_b->value);
+    Py_DECREF(scalar_a);
+    Py_DECREF(scalar_b);
 
     PhysicalScalarObject *new = PhysicalScalar_raw_new(result_value, result_dim);
     Py_DECREF(result_value);
