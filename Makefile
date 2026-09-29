@@ -22,3 +22,6 @@ lint:
 build:
 	uv build --wheel
 
+.PHONY: install_dev
+install_dev:
+	uv sync --extra dev
