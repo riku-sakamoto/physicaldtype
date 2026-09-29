@@ -13,31 +13,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@v6
+      - name: Build manylinux wheel
+        uses: pypa/cibuildwheel@v4.2.1
+        env:
+          CIBW_BUILD: cp312-manylinux_x86_64
 
-      - name: Build
-        run: uv build
-
-      - uses: actions/upload-artifact@v4
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: wheels
+          path: wheelhouse/*.whl
 
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
+  # publish:
+  #   needs: build
+  #   runs-on: ubuntu-latest
 
-    environment:
-      name: pypi
+  #   environment:
+  #     name: pypi
 
-    permissions:
-      id-token: write
+  #   permissions:
+  #     id-token: write
 
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: dist
+  #         path: dist/
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+  #     - name: Publish to PyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
