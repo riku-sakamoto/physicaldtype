@@ -10,9 +10,14 @@ The goal is to create a DType that can represent both physical dimension (e.g. L
 
 :warning: Physical dimension is only supported for now. Physical unit support is supposed to be implemented in the near future.
 
-## How to install
+## How to build this repo
 
-Only Linux is supported for now. To install, run the following command:
+Only Linux is supported for now.
+
+```bash
+uv sync --extra dev
+make build
+```
 
 
 ## Usage
