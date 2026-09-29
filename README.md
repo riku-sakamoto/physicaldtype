@@ -4,7 +4,8 @@
 
 ## Overview
 
-This project is an attempt to create Parametric DType using [NEP-41](https://numpy.org/neps/nep-0041-improved-dtype-support.html) and [NEP-43](https://numpy.org/neps/nep-0043-extensible-ufuncs.html).
+PhysicalDType is an experimental NumPy parametric DType for representing physical dimensions and units 
+using [NEP-41](https://numpy.org/neps/nep-0041-improved-dtype-support.html) and [NEP-43](https://numpy.org/neps/nep-0043-extensible-ufuncs.html).
 
 The goal is to create a DType that can represent both physical dimension (e.g. Length, Mass, Time) and physical units (e.g. m, km, ms).
 
@@ -50,3 +51,18 @@ To create a parametric DType, I referred to the following resources:
 
 * [numpy-quaddtype](https://github.com/numpy/numpy-quaddtype)
     * This library creates a cross-platform Quad (128-bit) float Data-Type for NumPy.
+
+
+## Current status
+
+PhysicalDType is currently experimental.
+
+Supported:
+- Physical dimensions represented by SI base dimensions
+- NumPy array creation with `PhysicalDType`
+- Basic arithmetic operations such as addition and multiplication
+
+Not yet supported:
+- Physical units and unit conversion
+- Many NumPy ufuncs and operations
+- Platforms other than Linux
