@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 
 from physicaldtype import physical_dimension_names, PhysicalDType, PhysicalScalar
@@ -27,3 +28,23 @@ def test__physical_dtype_getitem(exponents: list[float], values: list[float]):
 
         assert value.physical_dimension.exponents == tuple(exponents)
         np.testing.assert_allclose(value.value, values[i])
+
+
+def test__physical_dtype_invalid_key():
+    phy_dim = {"InvalidKey": 1.0}
+    with pytest.raises(ValueError, match="Invalid dimension name: InvalidKey"):
+        _ = np.array([1.0, 2.0, 3.0], dtype=PhysicalDType(phy_dim))
+
+
+def test__cannot_convert_to_utf8():
+    phy_dim = {"\ud800": 1}
+    with pytest.raises(
+        UnicodeEncodeError, match="'utf-8' codec can't encode character"
+    ):
+        _ = np.array([1.0, 2.0, 3.0], dtype=PhysicalDType(phy_dim))
+
+
+def test__overflow_exponent():
+    phy_dim = {"L": 10**1000}
+    with pytest.raises(OverflowError, match="int too large to convert to float"):
+        _ = np.array([1.0, 2.0, 3.0], dtype=PhysicalDType(phy_dim))

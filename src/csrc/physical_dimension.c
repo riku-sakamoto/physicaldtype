@@ -92,7 +92,11 @@ PhysicalDimension_raw_init(PhysicalDimensionObject *self, PyObject *dimensions)
                                 "Exponents list must contain only floats or integers");
                 return -1;
             }
-            self->exponents[i] = PyFloat_AsDouble(item);
+            double exponent_value = PyFloat_AsDouble(item);
+            if (PyErr_Occurred()) {
+                return -1;  // Error in converting to double
+            }
+            self->exponents[i] = exponent_value;
         }
         return 0;
     }
@@ -111,7 +115,14 @@ PhysicalDimension_raw_init(PhysicalDimensionObject *self, PyObject *dimensions)
                 return -1;
             }
             const char *dim_name = PyUnicode_AsUTF8(key);
+            if (dim_name == NULL) {
+                return -1;  // Error in converting key to UTF-8
+            }
+
             double exponent_value = PyFloat_AsDouble(value);
+            if (PyErr_Occurred()) {
+                return -1;  // Error in converting value to double
+            }
 
             int index = parse_dimension_name_to_index(dim_name);
             if (index == -1) {

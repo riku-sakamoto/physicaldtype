@@ -62,3 +62,25 @@ def test__physical_scalar_arithmetic_operations(
 
     if desired_dimension_op is None:
         assert res.physical_dimension.exponents == scalar1.physical_dimension.exponents
+
+
+def test__scalar_failed_divide():
+    scalar1 = PhysicalScalar(np.float64(1.0), {"L": 1})
+    scalar2 = PhysicalScalar(np.float64(0.0), {"L": 1})
+
+    with pytest.raises(FloatingPointError, match="divide by zero"):
+        with np.errstate(divide="raise"):
+            _ = scalar1 / scalar2
+
+
+@pytest.mark.parametrize(
+    "scalar_op", [operator.add, operator.sub, operator.mul, operator.truediv]
+)
+def test__scalar_not_implemented(scalar_op: Callable[[Any, Any], Any]):
+    scalar1 = PhysicalScalar(np.float64(1.0), {"L": 1})
+
+    with pytest.raises(
+        TypeError,
+        match="unsupported operand type",
+    ):
+        _ = scalar1 + object()  # type: ignore
