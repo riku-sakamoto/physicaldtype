@@ -47,10 +47,11 @@ PhysicalDTypeObject *translate_loop_descrs_impl(PyArray_Descr *const given_descr
     }
 
     PhysicalDTypeObject *result_dtype = new_physicaldtype_instance(result_dim);
+    Py_DECREF(result_dim);
+
     if (result_dtype == NULL) {
         return NULL;
     }
-    Py_DECREF(result_dim);
 
     return result_dtype;
 }
@@ -165,6 +166,9 @@ register_impl(PyObject *ufunc, PyArrayMethod_TranslateLoopDescriptors *translate
 int register_add(PyObject *numpy)
 {
     PyObject *add = PyObject_GetAttrString(numpy, "add");
+    if (add == NULL) {
+        return -1;
+    }
 
     int res = register_impl(add, &translate_add_loop_descrs);
     Py_DECREF(add);
@@ -178,6 +182,9 @@ int register_add(PyObject *numpy)
 int register_multiply(PyObject *numpy)
 {
     PyObject *multiply = PyObject_GetAttrString(numpy, "multiply");
+    if (multiply == NULL) {
+        return -1;
+    }
 
     int res = register_impl(multiply, &translate_multiply_loop_descrs);
     Py_DECREF(multiply);
@@ -190,6 +197,9 @@ int register_multiply(PyObject *numpy)
 int register_subtract(PyObject *numpy)
 {
     PyObject *subtract = PyObject_GetAttrString(numpy, "subtract");
+    if (subtract == NULL) {
+        return -1;
+    }
 
     int res = register_impl(subtract, &translate_subtract_loop_descrs);
     Py_DECREF(subtract);
@@ -202,6 +212,9 @@ int register_subtract(PyObject *numpy)
 int register_truediv(PyObject *numpy)
 {
     PyObject *truediv = PyObject_GetAttrString(numpy, "true_divide");
+    if (truediv == NULL) {
+        return -1;
+    }
 
     int res = register_impl(truediv, &translate_truediv_loop_descrs);
     Py_DECREF(truediv);

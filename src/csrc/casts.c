@@ -174,10 +174,17 @@ PyArrayMethod_Spec **
 init_casts(void)
 {
     PyArray_DTypeMeta **p2f_dtypes = malloc(2 * sizeof(PyArray_DTypeMeta *));
+    if (p2f_dtypes == NULL) {
+        return NULL;
+    }
     p2f_dtypes[0] = NULL;
     p2f_dtypes[1] = &PyArray_DoubleDType;
 
     PyArrayMethod_Spec *PhyToFloat64CastSpec = malloc(sizeof(PyArrayMethod_Spec));
+    if (PhyToFloat64CastSpec == NULL) {
+        free(p2f_dtypes);
+        return NULL;
+    }
     PhyToFloat64CastSpec->name = p2f_name;
     PhyToFloat64CastSpec->nin = 1;
     PhyToFloat64CastSpec->nout = 1;
@@ -187,6 +194,11 @@ init_casts(void)
     PhyToFloat64CastSpec->slots = p2f_slots;
 
     PyArrayMethod_Spec **casts = malloc(3 * sizeof(PyArrayMethod_Spec *));
+    if (casts == NULL) {
+        free(p2f_dtypes);
+        free(PhyToFloat64CastSpec);
+        return NULL;
+    }
     casts[0] = &PhyToPhyCastSpec;
     casts[1] = PhyToFloat64CastSpec;
     casts[2] = NULL;
