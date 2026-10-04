@@ -66,3 +66,20 @@ def test__cast_from_physical_dtype_to_physical():
         _ = arr.astype(PhysicalDType({"T": 1}), casting="safe")
 
     arr.astype(PhysicalDType({"T": 1}), casting="unsafe")
+
+
+@given(
+    exponents=st.lists(
+        st.floats(allow_nan=False, allow_infinity=False, width=32),
+        min_size=7,
+        max_size=7,
+    ),
+)
+def test__immutable_dimensions(exponents: list[float]):
+    phy_dim = {name: exp for name, exp in zip(physical_dimension_names, exponents)}
+    arr = np.array([1.0, 2.0], dtype=PhysicalDType(phy_dim))
+
+    # Attempt to modify the physical dimension of the array
+    _ = arr.dtype.physical_dimension.__init__({"T": 100})
+
+    assert arr.dtype.physical_dimension.exponents == tuple(exponents)

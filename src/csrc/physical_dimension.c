@@ -7,20 +7,6 @@
 #include "physical_dimension_ops.h"
 #include "physical_dimension.h"
 
-static PyObject *
-PhysicalDimensionObject_new(PyTypeObject *type, PyObject *Py_UNUSED(args),
-                            PyObject *Py_UNUSED(kwds))
-{
-    PhysicalDimensionObject *self;
-    self = (PhysicalDimensionObject *)type->tp_alloc(type, 0);
-    if (self != NULL) {
-        for (int i = 0; i < DIM_COUNT; i++) {
-            self->exponents[i] = 0.0;  // Initialize exponents to zero
-        }
-    }
-    return (PyObject *)self;
-}
-
 static const char *
 convert_dimension_key_to_string(int dim)
 {
@@ -138,13 +124,45 @@ PhysicalDimension_raw_init(PhysicalDimensionObject *self, PyObject *dimensions)
     return -1;
 }
 
+static PyObject *
+PhysicalDimensionObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    PhysicalDimensionObject *self;
+    self = (PhysicalDimensionObject *)type->tp_alloc(type, 0);
+    if (self == NULL) {
+        return NULL;
+    }
+    for (int i = 0; i < DIM_COUNT; i++) {
+        self->exponents[i] = 0.0;  // Initialize exponents to zero
+    }
+
+    static char *kwlist[] = {"exponents", NULL};
+    PyObject *exponents_obj = NULL;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &exponents_obj)) {
+        Py_DECREF(self);
+        return NULL;
+    }
+
+    if (PhysicalDimension_raw_init((PhysicalDimensionObject *)self, exponents_obj) < 0) {
+        Py_DECREF(self);
+        return NULL;
+    }
+
+    return (PyObject *)self;
+}
+
 PhysicalDimensionObject *
 PhysicalDimension_raw_new(PyObject *dimensions)
 {
-    PhysicalDimensionObject *self = (PhysicalDimensionObject *)PhysicalDimensionObject_new(
-            &PhysicalDimensionObjectType, NULL, NULL);
+    PhysicalDimensionObject *self = (PhysicalDimensionObject *)PhysicalDimensionObjectType.tp_alloc(
+            &PhysicalDimensionObjectType, 0);
     if (self == NULL) {
         return NULL;
+    }
+
+    for (int i = 0; i < DIM_COUNT; i++) {
+        self->exponents[i] = 0.0;
     }
 
     if (PhysicalDimension_raw_init(self, dimensions) < 0) {
@@ -152,25 +170,6 @@ PhysicalDimension_raw_new(PyObject *dimensions)
         return NULL;
     }
     return self;
-}
-
-static int
-PhysicalDimensionObject_init(PyObject *self, PyObject *args, PyObject *kwds)
-{
-    static char *kwlist[] = {"exponents", NULL};
-    PyObject *exponents_obj = NULL;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &exponents_obj)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "Invalid arguments: expected a list or dictionary for 'exponents'");
-        return -1;
-    }
-
-    if (PhysicalDimension_raw_init((PhysicalDimensionObject *)self, exponents_obj) == -1) {
-        return -1;
-    }
-
-    return 0;
 }
 
 static PyObject *
@@ -268,7 +267,7 @@ PyTypeObject PhysicalDimensionObjectType = {
         .tp_basicsize = sizeof(PhysicalDimensionObject),
         .tp_itemsize = 0,
         .tp_new = PhysicalDimensionObject_new,
-        .tp_init = PhysicalDimensionObject_init,
+        .tp_init = NULL,
         .tp_flags = Py_TPFLAGS_DEFAULT,
         .tp_repr = (reprfunc)PhysicalDimensionObject_repr,
         .tp_str = (reprfunc)PhysicalDimensionObject_repr,
