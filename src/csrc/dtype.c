@@ -135,25 +135,29 @@ physicaldtype_setitem(PhysicalDTypeObject *descr, PyObject *obj, char *dataptr)
     return 0;
 }
 
-static int
-physicaldtype_getitem(PhysicalDTypeObject *descr, char *dataptr, PyObject **out)
+static PyObject *
+physicaldtype_getitem(PhysicalDTypeObject *descr, char *dataptr)
 {
-    double value;
-    memcpy(&value, dataptr, sizeof(double));
+    PyArray_Descr *base_descr = PyArray_DescrFromType(NPY_FLOAT64);
+    if (base_descr == NULL) {
+        return NULL;
+    }
 
-    PyObject *value_obj = PyFloat_FromDouble(value);
+    PyObject *value_obj = PyArray_Scalar(dataptr, base_descr, NULL);
+    Py_DECREF(base_descr);
+
     if (value_obj == NULL) {
-        return -1;
+        return NULL;
     }
     PhysicalScalarObject *phys_scalar =
             PhysicalScalar_raw_new(value_obj, descr->physical_dimension);
     if (phys_scalar == NULL) {
-        return -1;
+        return NULL;
     }
 
-    *out = (PyObject *)phys_scalar;
+    PyObject *out = (PyObject *)phys_scalar;
     Py_DECREF(value_obj);
-    return 0;
+    return out;
 }
 
 static PhysicalDTypeObject *
