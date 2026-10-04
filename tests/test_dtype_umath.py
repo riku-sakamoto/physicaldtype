@@ -174,3 +174,11 @@ def test__physical_dtype_truediv(
     assert dtype.physical_dimension.exponents == tuple(
         exponents_1[i] - exponents_2[i] for i in range(N_DIM)
     )
+
+
+def test__cannot_convert_to_incompatible_dtype():
+    a = np.array([2.0], dtype=PhysicalDType({"L": 1}))
+    out = np.array([0.0], dtype=PhysicalDType({"T": 1}))
+
+    with pytest.raises(TypeError, match="Cannot cast ufunc 'multiply' output"):
+        _ = np.multiply(a, a, out=out)

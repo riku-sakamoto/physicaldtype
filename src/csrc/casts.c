@@ -13,6 +13,8 @@
 
 #include "casts.h"
 #include "dtype.h"
+#include "physical_dimension.h"
+#include "physical_dimension_ops.h"
 
 static int
 phy_to_float64_contiguous(PyArrayMethod_Context *NPY_UNUSED(context), char *const *data,
@@ -97,21 +99,23 @@ phy_to_float64_get_loop(PyArrayMethod_Context *NPY_UNUSED(context), int aligned,
 // #region PhysicalDtype to PhysicalDtype
 
 static NPY_CASTING
-phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self), PyArray_DTypeMeta *NPY_UNUSED(dtypes[2]),
-                               PyArray_Descr *given_descrs[2], PyArray_Descr *loop_descrs[2],
+phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self),
+                               PyArray_DTypeMeta *const *NPY_UNUSED(dtypes),
+                               PyArray_Descr *const *given_descrs, PyArray_Descr **loop_descrs,
                                npy_intp *NPY_UNUSED(view_offset))
 {
-    loop_descrs[0] = given_descrs[0];
-    Py_INCREF(loop_descrs[0]);
+    loop_descrs[0] = (PyArray_Descr *)Py_NewRef(given_descrs[0]);
 
     if (given_descrs[1] == NULL) {
-        loop_descrs[1] = given_descrs[0];
-        Py_INCREF(given_descrs[0]);
+        loop_descrs[1] = (PyArray_Descr *)Py_NewRef(given_descrs[0]);
+        return NPY_SAFE_CASTING;
     }
-    else {
-        // HACK: Need to convert with proper casting
-        loop_descrs[1] = given_descrs[1];
-        Py_INCREF(given_descrs[1]);
+
+    loop_descrs[1] = (PyArray_Descr *)Py_NewRef(given_descrs[1]);
+    if (physical_dimension_equal(((PhysicalDTypeObject *)loop_descrs[0])->physical_dimension,
+                                 ((PhysicalDTypeObject *)loop_descrs[1])->physical_dimension) ==
+        false) {
+        return NPY_UNSAFE_CASTING;
     }
 
     return NPY_SAFE_CASTING;
@@ -155,7 +159,7 @@ static PyArrayMethod_Spec PhyToPhyCastSpec = {
         .nin = 1,
         .nout = 1,
         .flags = NPY_METH_SUPPORTS_UNALIGNED,
-        .casting = NPY_SAFE_CASTING,
+        .casting = NPY_UNSAFE_CASTING,
         .dtypes = phy2phy_dtypes,
         .slots = phy2phy_slots,
 };
@@ -170,10 +174,17 @@ PyArrayMethod_Spec **
 init_casts(void)
 {
     PyArray_DTypeMeta **p2f_dtypes = malloc(2 * sizeof(PyArray_DTypeMeta *));
+    if (p2f_dtypes == NULL) {
+        return NULL;
+    }
     p2f_dtypes[0] = NULL;
     p2f_dtypes[1] = &PyArray_DoubleDType;
 
     PyArrayMethod_Spec *PhyToFloat64CastSpec = malloc(sizeof(PyArrayMethod_Spec));
+    if (PhyToFloat64CastSpec == NULL) {
+        free(p2f_dtypes);
+        return NULL;
+    }
     PhyToFloat64CastSpec->name = p2f_name;
     PhyToFloat64CastSpec->nin = 1;
     PhyToFloat64CastSpec->nout = 1;
@@ -183,6 +194,11 @@ init_casts(void)
     PhyToFloat64CastSpec->slots = p2f_slots;
 
     PyArrayMethod_Spec **casts = malloc(3 * sizeof(PyArrayMethod_Spec *));
+    if (casts == NULL) {
+        free(p2f_dtypes);
+        free(PhyToFloat64CastSpec);
+        return NULL;
+    }
     casts[0] = &PhyToPhyCastSpec;
     casts[1] = PhyToFloat64CastSpec;
     casts[2] = NULL;
