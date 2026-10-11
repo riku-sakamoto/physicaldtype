@@ -1,5 +1,8 @@
 import abc
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
 
 physical_dimension_names: tuple[str, str, str, str, str, str, str]
 
@@ -48,7 +51,7 @@ class PhysicalScalar(abc.ABC):
 
 class PhysicalDType(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, dimension: dict[PhysicalDimensionKey, float]):
+    def __init__(self, dimension: dict[PhysicalDimensionKey, float], storage_dtype: np.dtype | None = None):
         pass
 
     @property

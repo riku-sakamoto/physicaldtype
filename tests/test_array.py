@@ -83,3 +83,33 @@ def test__immutable_dimensions(exponents: list[float]):
     _ = arr.dtype.physical_dimension.__init__({"T": 100})
 
     assert arr.dtype.physical_dimension.exponents == tuple(exponents)
+
+
+@pytest.mark.parametrize(
+    "storage_dtype",
+    [
+        np.float32,
+        np.float64,
+        np.int32,
+        np.int64,
+        np.complex64,
+        np.complex128,
+        "float32",
+        "float64",
+        "int32",
+        "int64",
+        "complex64",
+        "complex128",
+    ],
+)
+def test__initialize_with_storage_dtype(storage_dtype: np.dtype):
+    phy_dim = {"L": 1, "M": 1, "T": -2}
+    dtype = PhysicalDType(phy_dim, storage_dtype=storage_dtype)
+
+    assert isinstance(dtype, PhysicalDType)
+    assert dtype.storage_dtype == storage_dtype
+
+    arr = np.array([1.0, 2.0, 3.0], dtype=dtype)
+
+    item = arr[0]
+    assert item.value.dtype == storage_dtype

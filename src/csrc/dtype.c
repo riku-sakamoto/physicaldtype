@@ -19,7 +19,8 @@
 #include "scalar.h"
 
 PhysicalDTypeObject *
-new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension)
+new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension,
+                           PyArray_Descr *storage_descr)
 {
     PhysicalDTypeObject *self = (PhysicalDTypeObject *)PyArrayDescr_Type.tp_new(
             (PyTypeObject *)&PhysicalDType, NULL, NULL);
@@ -30,35 +31,12 @@ new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension)
 
     Py_INCREF(physical_dimension);
     self->physical_dimension = physical_dimension;
-    self->base.elsize = sizeof(double);  // Assuming we are using double for storage
-    self->base.alignment = _Alignof(double);
+
+    Py_INCREF(storage_descr);
+    self->storage_descr = storage_descr;
+    self->base.elsize = storage_descr->elsize;
+    self->base.alignment = storage_descr->alignment;
     return self;
-}
-
-static double
-get_value(PyObject *scalar)
-{
-    PyTypeObject *type = Py_TYPE(scalar);
-    if (type != &PhysicalScalar_Type) {
-        // HACK: Need to support other types like int, float, etc
-        double res = PyFloat_AsDouble(scalar);
-        if (res == -1.0 && PyErr_Occurred()) {
-            PyErr_SetString(
-                    PyExc_TypeError,
-                    "PhysicalDType can only be constructed from a float or a PhysicalScalar");
-            return -1;
-        }
-        return res;
-    }
-
-    PhysicalScalarObject *phys_scalar = (PhysicalScalarObject *)scalar;
-    PyObject *value = phys_scalar->value;
-    double res = PyFloat_AsDouble(value);
-    if (res == -1.0 && PyErr_Occurred()) {
-        PyErr_SetString(PyExc_TypeError, "PhysicalScalar value must be a float");
-        return -1;
-    }
-    return res;
 }
 
 static PhysicalDTypeObject *
@@ -94,8 +72,9 @@ physicaldtype_discover_descriptor_from_pyobject(PyArray_DTypeMeta *NPY_UNUSED(cl
     if (Py_TYPE(obj) == &PhysicalScalar_Type) {
         PhysicalScalarObject *phys_scalar = (PhysicalScalarObject *)obj;
         PhysicalDimensionObject *dim = phys_scalar->physical_dimension;
+        PyArray_Descr *storage_descr = PyArray_DescrFromScalar(phys_scalar->value);
 
-        PhysicalDTypeObject *new_dtype = new_physicaldtype_instance(dim);
+        PhysicalDTypeObject *new_dtype = new_physicaldtype_instance(dim, storage_descr);
         if (new_dtype == NULL) {
             return NULL;
         }
@@ -107,6 +86,41 @@ physicaldtype_discover_descriptor_from_pyobject(PyArray_DTypeMeta *NPY_UNUSED(cl
 }
 
 static int
+check_scalar_type(PyObject *obj, PhysicalDTypeObject *dtype)
+{
+    if (Py_TYPE(obj) == &PhysicalScalar_Type) {
+        PhysicalScalarObject *phys_scalar = (PhysicalScalarObject *)obj;
+        if (physical_dimension_equal(phys_scalar->physical_dimension, dtype->physical_dimension) ==
+            false) {
+            PyErr_SetString(
+                    PyExc_TypeError,
+                    "PhysicalScalar must have the same physical dimension as the PhysicalDType");
+            return -1;
+        }
+        return 0;
+    }
+
+    if (PyArray_IsPythonScalar(obj)) {
+        if (PyNumber_Check(obj) != 1) {
+            PyErr_SetString(PyExc_TypeError, "Object is not a numeric scalar");
+            return -1;
+        }
+        return 0;
+    }
+
+    if (PyArray_CheckScalar(obj)) {
+        if (PyDataType_ISNUMBER(PyArray_DescrFromScalar(obj)) != 1) {
+            PyErr_SetString(PyExc_TypeError, "Object is not a numeric scalar");
+            return -1;
+        }
+        return 0;
+    }
+
+    PyErr_SetString(PyExc_TypeError, "Object is not a recognized scalar type");
+    return -1;
+}
+
+static int
 physicaldtype_setitem(PhysicalDTypeObject *descr, PyObject *obj, char *dataptr)
 {
     if (obj == NULL) {
@@ -114,13 +128,12 @@ physicaldtype_setitem(PhysicalDTypeObject *descr, PyObject *obj, char *dataptr)
         return -1;
     }
 
-    double value = get_value(obj);
-    if (value == -1.0 && PyErr_Occurred()) {
+    if (check_scalar_type(obj, descr) != 0) {
         return -1;
     }
 
-    PyTypeObject *type = Py_TYPE(obj);
-    if (type == &PhysicalScalar_Type) {
+    PyObject *value = NULL;
+    if (PyObject_TypeCheck(obj, &PhysicalScalar_Type)) {
         if (physical_dimension_equal(descr->physical_dimension,
                                      ((PhysicalScalarObject *)obj)->physical_dimension) == false) {
             PyErr_SetString(
@@ -129,22 +142,37 @@ physicaldtype_setitem(PhysicalDTypeObject *descr, PyObject *obj, char *dataptr)
                     "physical dimension");
             return -1;
         }
+        value = ((PhysicalScalarObject *)obj)->value;
+    }
+    else {
+        value = obj;
     }
 
-    memcpy(dataptr, &value, sizeof(double));
+    if (value == NULL) {
+        // This should not happen, but just in case
+        PyErr_SetString(PyExc_TypeError, "Cannot set item to NULL");
+        return -1;
+    }
+
+    PyObject *tmp = PyArray_FromAny(value, (PyArray_Descr *)Py_NewRef(descr->storage_descr), 0, 0,
+                                    NPY_ARRAY_ENSUREARRAY | NPY_ARRAY_FORCECAST, NULL);
+    if (PyArray_IsZeroDim(tmp) == 0) {
+        PyErr_SetString(PyExc_TypeError, "Failed to convert value to a zero-dimensional array");
+        Py_DECREF(tmp);
+        return -1;
+    }
+
+    memcpy(dataptr, PyArray_DATA((PyArrayObject *)tmp), descr->storage_descr->elsize);
+    Py_DECREF(tmp);
+
     return 0;
 }
 
 static PyObject *
 physicaldtype_getitem(PhysicalDTypeObject *descr, char *dataptr)
 {
-    PyArray_Descr *base_descr = PyArray_DescrFromType(NPY_FLOAT64);
-    if (base_descr == NULL) {
-        return NULL;
-    }
-
+    PyArray_Descr *base_descr = descr->storage_descr;
     PyObject *value_obj = PyArray_Scalar(dataptr, base_descr, NULL);
-    Py_DECREF(base_descr);
 
     if (value_obj == NULL) {
         return NULL;
@@ -181,22 +209,32 @@ static PyType_Slot PhysicalDType_Slots[] = {
 PyObject *
 physicaldtype_new(PyTypeObject *Py_UNUSED(type), PyObject *args, PyObject *kwds)
 {
-    static char *kwlist[] = {"physical_dimension", NULL};
+    static char *kwlist[] = {"physical_dimension", "storage_dtype", NULL};
 
-    PyObject *dimension_dict = NULL;
+    PyObject *dimension_obj = NULL;
+    PyArray_Descr *storage_descr = NULL;
 
-    // Need to accept other types like string?
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyDict_Type, &dimension_dict)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO&", kwlist, &dimension_obj,
+                                     PyArray_DescrConverter2, &storage_descr)) {
         return NULL;
     }
 
-    PhysicalDimensionObject *dimension = PhysicalDimension_raw_new(dimension_dict);
+    if (storage_descr == NULL) {
+        storage_descr = PyArray_DescrFromType(NPY_FLOAT64);
+        if (storage_descr == NULL) {
+            return NULL;
+        }
+    }
+
+    PhysicalDimensionObject *dimension = PhysicalDimension_raw_new(dimension_obj);
     if (dimension == NULL) {
+        Py_DECREF(storage_descr);
         return NULL;
     }
 
-    PyObject *res = (PyObject *)new_physicaldtype_instance(dimension);
+    PyObject *res = (PyObject *)new_physicaldtype_instance(dimension, storage_descr);
     Py_DECREF(dimension);
+    Py_DECREF(storage_descr);
     return res;
 }
 
@@ -210,12 +248,15 @@ physicaltype_dealloc(PhysicalDTypeObject *self)
 static PyObject *
 physicaldtype_repr(PhysicalDTypeObject *self)
 {
-    return PyUnicode_FromFormat("PhysicalDType('%R')", self->physical_dimension);
+    return PyUnicode_FromFormat("PhysicalDType[%S](%R)", self->storage_descr,
+                                self->physical_dimension);
 }
 
 static PyMemberDef PhysicalDType_members[] = {
         {"physical_dimension", T_OBJECT_EX, offsetof(PhysicalDTypeObject, physical_dimension),
          READONLY, "Physical dimension object"},
+        {"storage_dtype", T_OBJECT_EX, offsetof(PhysicalDTypeObject, storage_descr), READONLY,
+         "Storage dtype descriptor"},
         {NULL} /* Sentinel */
 };
 

@@ -46,8 +46,17 @@ PhysicalDTypeObject *translate_loop_descrs_impl(PyArray_Descr *const given_descr
         return NULL;
     }
 
-    PhysicalDTypeObject *result_dtype = new_physicaldtype_instance(result_dim);
+    // Resolve stroage dtype
+    PyArray_Descr *given_storage_descrs[2] = {left->storage_descr, right->storage_descr};
+    PyArray_Descr *result_storage = PyArray_ResultType(0, NULL, 2, given_storage_descrs);
+    if (result_storage == NULL) {
+        Py_DECREF(result_dim);
+        return NULL;
+    }
+
+    PhysicalDTypeObject *result_dtype = new_physicaldtype_instance(result_dim, result_storage);
     Py_DECREF(result_dim);
+    Py_DECREF(result_storage);
 
     if (result_dtype == NULL) {
         return NULL;

@@ -7,20 +7,22 @@
 #include "physical_dimension.h"
 
 typedef struct {
+    /** Base NumPy dtype descriptor. */
     PyArray_Descr base;
 
+    /** Physical dimension associated with this dtype. */
     PhysicalDimensionObject *physical_dimension;
 
-    // In the future, we might want to add a storage descriptor
-    // to handle different storage types (e.g., float32, float64) for the physical dtype.
-    // PyArray_Descr *storage_descr;
+    /** NumPy dtype descriptor used for the underlying storage. */
+    PyArray_Descr *storage_descr;
 
 } PhysicalDTypeObject;
 
 extern PyArray_DTypeMeta PhysicalDType;
 
 PhysicalDTypeObject *
-new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension);
+new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension,
+                           PyArray_Descr *storage_descr);
 
 int
 init_physical_dtype(void);

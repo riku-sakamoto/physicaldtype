@@ -182,3 +182,30 @@ def test__cannot_convert_to_incompatible_dtype():
 
     with pytest.raises(TypeError, match="Cannot cast ufunc 'multiply' output"):
         _ = np.multiply(a, a, out=out)
+
+
+storage_dtypes = [
+    np.float32,
+    np.float64,
+    np.int32,
+    np.int64,
+    np.complex64,
+    np.complex128,
+    "float32",
+    "float64",
+    "int32",
+    "int64",
+    "complex64",
+    "complex128",
+]
+
+
+@given(dtype1=st.sampled_from(storage_dtypes), dtype2=st.sampled_from(storage_dtypes))
+def test__calculation_with_different_storage_dtype(dtype1: np.dtype, dtype2: np.dtype):
+    a = np.array([2.0], dtype=PhysicalDType({"L": 1}, storage_dtype=dtype1))
+    b = np.array([3.0], dtype=PhysicalDType({"L": 1}, storage_dtype=dtype2))
+
+    result = a * b
+    assert isinstance(result.dtype, PhysicalDType)
+
+    assert result.dtype.storage_dtype == np.result_type(dtype1, dtype2)
