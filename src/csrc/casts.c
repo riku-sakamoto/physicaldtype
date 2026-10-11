@@ -116,10 +116,17 @@ phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self),
 
     loop_descrs[1] = (PyArray_Descr *)Py_NewRef(given_descrs[1]);
 
-    if (PyObject_RichCompareBool((PyObject *)((PhysicalDTypeObject *)loop_descrs[0])->storage_descr,
-                                 (PyObject *)((PhysicalDTypeObject *)loop_descrs[1])->storage_descr,
-                                 Py_EQ) < 1) {
+    int same_storage_dtype = PyObject_RichCompareBool(
+            (PyObject *)((PhysicalDTypeObject *)loop_descrs[0])->storage_descr,
+            (PyObject *)((PhysicalDTypeObject *)loop_descrs[1])->storage_descr, Py_EQ);
+    if (same_storage_dtype == -1) {
+        PyErr_SetString(PyExc_TypeError, "Failed to compare storage dtypes");
+        return -1;
+    }
+    else if (same_storage_dtype == 0) {
         // Temporarily block this casting
+        PyErr_SetString(PyExc_TypeError,
+                        "Cannot cast between PhysicalDType with different storage dtypes");
         return -1;
     }
 

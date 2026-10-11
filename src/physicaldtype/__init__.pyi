@@ -51,10 +51,15 @@ class PhysicalScalar(abc.ABC):
 
 class PhysicalDType(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, dimension: dict[PhysicalDimensionKey, float], storage_dtype: np.dtype | None = None):
+    def __init__(self, dimension: dict[PhysicalDimensionKey, float], storage_dtype: np.typing.DTypeLike | None = None):
         pass
 
     @property
     @abc.abstractmethod
     def physical_dimension(self) -> PhysicalDimension:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def storage_dtype(self) -> np.dtype:
         pass

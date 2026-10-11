@@ -209,3 +209,4 @@ def test__calculation_with_different_storage_dtype(dtype1: np.dtype, dtype2: np.
     assert isinstance(result.dtype, PhysicalDType)
 
     assert result.dtype.storage_dtype == np.result_type(dtype1, dtype2)
+    assert result[0].value == 6.0

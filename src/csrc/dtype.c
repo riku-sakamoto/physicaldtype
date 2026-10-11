@@ -29,6 +29,12 @@ new_physicaldtype_instance(PhysicalDimensionObject *physical_dimension,
         return NULL;
     }
 
+    if (PyDataType_ISNUMBER(storage_descr) == 0) {
+        PyErr_SetString(PyExc_TypeError, "Storage dtype must be a numeric dtype");
+        Py_DECREF(self);
+        return NULL;
+    }
+
     Py_INCREF(physical_dimension);
     self->physical_dimension = physical_dimension;
 
@@ -156,6 +162,9 @@ physicaldtype_setitem(PhysicalDTypeObject *descr, PyObject *obj, char *dataptr)
 
     PyObject *tmp = PyArray_FromAny(value, (PyArray_Descr *)Py_NewRef(descr->storage_descr), 0, 0,
                                     NPY_ARRAY_ENSUREARRAY | NPY_ARRAY_FORCECAST, NULL);
+    if (tmp == NULL) {
+        return -1;
+    }
     if (PyArray_IsZeroDim(tmp) == 0) {
         PyErr_SetString(PyExc_TypeError, "Failed to convert value to a zero-dimensional array");
         Py_DECREF(tmp);
@@ -211,30 +220,35 @@ physicaldtype_new(PyTypeObject *Py_UNUSED(type), PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"physical_dimension", "storage_dtype", NULL};
 
-    PyObject *dimension_obj = NULL;
-    PyArray_Descr *storage_descr = NULL;
+    PyObject *dimension_like_obj = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO&", kwlist, &dimension_obj,
+    PhysicalDimensionObject *dimension = NULL;
+    PyArray_Descr *storage_descr = NULL;
+    PyObject *res = NULL;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO&", kwlist, &dimension_like_obj,
                                      PyArray_DescrConverter2, &storage_descr)) {
-        return NULL;
+        goto finalize;
     }
 
     if (storage_descr == NULL) {
         storage_descr = PyArray_DescrFromType(NPY_FLOAT64);
         if (storage_descr == NULL) {
-            return NULL;
+            goto finalize;
         }
     }
 
-    PhysicalDimensionObject *dimension = PhysicalDimension_raw_new(dimension_obj);
+    dimension = PhysicalDimension_raw_new(dimension_like_obj);
     if (dimension == NULL) {
-        Py_DECREF(storage_descr);
-        return NULL;
+        goto finalize;
     }
 
-    PyObject *res = (PyObject *)new_physicaldtype_instance(dimension, storage_descr);
-    Py_DECREF(dimension);
-    Py_DECREF(storage_descr);
+    res = (PyObject *)new_physicaldtype_instance(dimension, storage_descr);
+    goto finalize;
+
+finalize:
+    Py_XDECREF(dimension);
+    Py_XDECREF(storage_descr);
     return res;
 }
 
@@ -242,6 +256,7 @@ static void
 physicaltype_dealloc(PhysicalDTypeObject *self)
 {
     Py_CLEAR(self->physical_dimension);
+    Py_CLEAR(self->storage_descr);
     PyArrayDescr_Type.tp_dealloc((PyObject *)self);
 }
 
