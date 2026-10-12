@@ -143,10 +143,12 @@ static int translate_truediv_loop_descrs(int NPY_UNUSED(nin), int NPY_UNUSED(nou
     return 0;
 }
 
-PyArray_DTypeMeta *physical_dtypes[3] = {&PhysicalDType, &PhysicalDType, &PhysicalDType};
+static PyArray_DTypeMeta *physical_float64_dtypes[3] = {&PhysicalFloat64DType, &PhysicalFloat64DType, &PhysicalFloat64DType};
+static PyArray_DTypeMeta *physical_float32_dtypes[3] = {&PhysicalFloat32DType, &PhysicalFloat32DType, &PhysicalFloat32DType};
+
 
 int
-_register_impl(PyObject *ufunc, PyArrayMethod_TranslateLoopDescriptors *translate_loop_descrs, int npy_type)
+_register_impl(PyObject *ufunc, PyArray_DTypeMeta** dtypes, PyArrayMethod_TranslateLoopDescriptors *translate_loop_descrs, int npy_type)
 {
     PyArray_Descr *descr = PyArray_DescrFromType(npy_type);
     if (descr == NULL) {
@@ -161,7 +163,7 @@ _register_impl(PyObject *ufunc, PyArrayMethod_TranslateLoopDescriptors *translat
             dtype,
     };
 
-    int res = PyUFunc_AddWrappingLoop(ufunc, physical_dtypes, wrapped_dtypes, &translate_given_descrs,
+    int res = PyUFunc_AddWrappingLoop(ufunc, dtypes, wrapped_dtypes, &translate_given_descrs,
                             translate_loop_descrs);
 
     Py_DECREF(descr);
@@ -175,13 +177,13 @@ _register_impl(PyObject *ufunc, PyArrayMethod_TranslateLoopDescriptors *translat
 int
 register_impl(PyObject *ufunc, PyArrayMethod_TranslateLoopDescriptors *translate_loop_descrs){
 
-    if (_register_impl(ufunc, translate_loop_descrs, NPY_DOUBLE) < 0) {
+    if (_register_impl(ufunc, physical_float64_dtypes, translate_loop_descrs, NPY_DOUBLE) < 0) {
         return -1;
     }
 
-    // if (_register_impl(ufunc, translate_loop_descrs, NPY_FLOAT32) < 0) {
-    //     return -1;
-    // }
+    if (_register_impl(ufunc, physical_float32_dtypes, translate_loop_descrs, NPY_FLOAT32) < 0) {
+        return -1;
+    }
 
     return 0;
 }

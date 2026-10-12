@@ -34,7 +34,7 @@ class PhysicalDimension(abc.ABC):
         """
         pass
 
-class PhysicalScalar(abc.ABC):
+class PhysicalFloat64Scalar(abc.ABC):
     @abc.abstractmethod
     def __init__(self, value: float, dimension: dict[PhysicalDimensionKey, float]):
         pass
@@ -49,9 +49,26 @@ class PhysicalScalar(abc.ABC):
     def physical_dimension(self) -> PhysicalDimension:
         pass
 
-class PhysicalDType(abc.ABC):
+
+class PhysicalFloat32Scalar(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, dimension: dict[PhysicalDimensionKey, float], storage_dtype: np.typing.DTypeLike | None = None):
+    def __init__(self, value: float, dimension: dict[PhysicalDimensionKey, float]):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def value(self) -> float:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def physical_dimension(self) -> PhysicalDimension:
+        pass
+
+
+class PhysicalFloat64DType(abc.ABC):
+    @abc.abstractmethod
+    def __init__(self, dimension: dict[PhysicalDimensionKey, float]):
         pass
 
     @property
@@ -62,4 +79,32 @@ class PhysicalDType(abc.ABC):
     @property
     @abc.abstractmethod
     def storage_dtype(self) -> np.dtype:
+        pass
+
+
+class PhysicalFloat32DType(abc.ABC):
+    @abc.abstractmethod
+    def __init__(self, dimension: dict[PhysicalDimensionKey, float]):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def physical_dimension(self) -> PhysicalDimension:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def storage_dtype(self) -> np.dtype:
+        pass
+
+
+class PhysicalDType(abc.ABC):
+    @abc.abstractmethod
+    def __getitem__(self, key: str) -> np.typing.DTypeLike:
+        pass
+
+
+class PhysicalScalar(abc.ABC):
+    @abc.abstractmethod
+    def __getitem__(self, key: str) -> type:
         pass
