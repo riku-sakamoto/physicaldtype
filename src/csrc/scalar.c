@@ -1,4 +1,5 @@
 #include <Python.h>
+#include "stdbool.h"
 
 #define PY_ARRAY_UNIQUE_SYMBOL physicaldtype_ARRAY_API
 #define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION
@@ -13,46 +14,100 @@
 #include "scalar_ops.h"
 #include "physical_dimension.h"
 
+PyTypeObject *
+get_physicalscalar_type(PyArray_Descr *storage_descr)
+{
+    if (storage_descr->type_num == NPY_FLOAT64) {
+        return &PhysicalFloat64Scalar_Type;
+    }
+    else if (storage_descr->type_num == NPY_FLOAT32) {
+        return &PhysicalFloat32Scalar_Type;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Unsupported storage dtype for PhysicalScalar");
+        return NULL;
+    }
+}
+
+bool
+is_physical_scalar(PyObject *obj)
+{
+    if (PyObject_TypeCheck(obj, &PhysicalFloat64Scalar_Type) ||
+        PyObject_TypeCheck(obj, &PhysicalFloat32Scalar_Type)) {
+        return true;
+    }
+    return false;
+}
+
+PyArray_Descr *
+get_physicalscalar_storage_descr(PyTypeObject *type)
+{
+    if (type == &PhysicalFloat64Scalar_Type) {
+        return PyArray_DescrFromType(NPY_FLOAT64);
+    }
+    else if (type == &PhysicalFloat32Scalar_Type) {
+        return PyArray_DescrFromType(NPY_FLOAT32);
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Unknown PhysicalScalar type");
+        return NULL;
+    }
+}
+
 /*
 　This function creates a new PhysicalScalarObject with the given value and physical dimension.
   NOTE: This function create new references to both value and physical_dimension.
  */
 PhysicalScalarObject *
-PhysicalScalar_raw_new(PyObject *value, PhysicalDimensionObject *physical_dimension)
+PhysicalScalar_raw_new(PyTypeObject *type, PyObject *value,
+                       PhysicalDimensionObject *physical_dimension)
 {
+    PyArray_Descr *expected_descr = NULL;
+    PyArray_Descr *value_descr = NULL;
+    PhysicalScalarObject *self = NULL;
+
     if (value == NULL) {
         PyErr_SetString(PyExc_TypeError, "value argument is required");
-        return NULL;
+        goto finalize;
     }
 
     if (PyArray_CheckScalar(value) == 0) {
         PyErr_SetString(PyExc_TypeError, "value must be a NumPy scalar");
-        return NULL;
+        goto finalize;
     }
-    PyArray_Descr *descr = PyArray_DescrFromScalar(value);
-    if (descr == NULL) {
-        return NULL;
-    }
-    if (PyDataType_ISNUMBER(descr) == 0) {
-        Py_DECREF(descr);
-        PyErr_SetString(PyExc_TypeError, "value must be a numeric NumPy scalar");
-        return NULL;
+    expected_descr = get_physicalscalar_storage_descr(type);
+    if (expected_descr == NULL) {
+        goto finalize;
     }
 
-    PhysicalScalarObject *self = PyObject_New(PhysicalScalarObject, &PhysicalScalar_Type);
+    value_descr = PyArray_DescrFromScalar(value);
+    if (PyDataType_ISNUMBER(value_descr) == 0) {
+        PyErr_SetString(PyExc_TypeError, "value must be a numeric NumPy scalar");
+        goto finalize;
+    }
+
+    if (PyArray_EquivTypes(expected_descr, value_descr) == 0) {
+        PyErr_SetString(PyExc_TypeError, "value must be a NumPy scalar of the expected type");
+        goto finalize;
+    }
+
+    self = PyObject_New(PhysicalScalarObject, type);
     if (self == NULL) {
-        Py_DECREF(descr);
-        return NULL;
+        goto finalize;
     }
 
     self->value = Py_NewRef(value);
     self->physical_dimension = (PhysicalDimensionObject *)Py_NewRef(physical_dimension);
-    Py_DECREF(descr);
+    goto finalize;
+
+finalize:
+    Py_XDECREF(expected_descr);
+    Py_XDECREF(value_descr);
     return self;
 }
 
 static PyObject *
-PhysicalScalar_new(PyTypeObject *Py_UNUSED(cls), PyObject *args, PyObject *kwargs)
+PhysicalScalar_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *value = NULL;
     PyObject *physical_dimension = NULL;
@@ -68,7 +123,7 @@ PhysicalScalar_new(PyTypeObject *Py_UNUSED(cls), PyObject *args, PyObject *kwarg
         return NULL;
     }
 
-    PyObject *res = (PyObject *)PhysicalScalar_raw_new(value, dimension);
+    PyObject *res = (PyObject *)PhysicalScalar_raw_new(cls, value, dimension);
     Py_DECREF(dimension);
     return res;
 }
@@ -156,8 +211,22 @@ static PyGetSetDef PhysicalScalarObject_getset[] = {
         {NULL} /* Sentinel */
 };
 
-PyTypeObject PhysicalScalar_Type = {
-        PyVarObject_HEAD_INIT(NULL, 0).tp_name = "_physicaldtype_main.PhysicalScalar",
+PyTypeObject PhysicalFloat64Scalar_Type = {
+        PyVarObject_HEAD_INIT(NULL, 0).tp_name = "_physicaldtype_main.PhysicalFloat64Scalar",
+        .tp_basicsize = sizeof(PhysicalScalarObject),
+        .tp_itemsize = 0,
+        // This scalar class is immutable, so we don't need to implement tp_init
+        .tp_new = PhysicalScalar_new,
+        .tp_dealloc = (destructor)PhysicalScalar_dealloc,
+        .tp_repr = (reprfunc)PhysicalScalarObject_repr,
+        .tp_str = (reprfunc)PhysicalScalarObject_str,
+        .tp_as_number = &PhysicalScalarObject_as_scalar,
+        .tp_methods = PhysicalScalarObject_methods,
+        .tp_getset = PhysicalScalarObject_getset,
+};
+
+PyTypeObject PhysicalFloat32Scalar_Type = {
+        PyVarObject_HEAD_INIT(NULL, 0).tp_name = "_physicaldtype_main.PhysicalFloat32Scalar",
         .tp_basicsize = sizeof(PhysicalScalarObject),
         .tp_itemsize = 0,
         // This scalar class is immutable, so we don't need to implement tp_init
@@ -174,5 +243,13 @@ int
 init_physical_scalar(void)
 {
     // PhysicalScalar_Type.tp_base = &PyFloatingArrType_Type;
-    return PyType_Ready(&PhysicalScalar_Type);
+
+    if (PyType_Ready(&PhysicalFloat64Scalar_Type) < 0) {
+        return -1;
+    }
+    if (PyType_Ready(&PhysicalFloat32Scalar_Type) < 0) {
+        return -1;
+    }
+
+    return 0;
 }

@@ -22,7 +22,10 @@
 static PhysicalScalarObject *
 try_cast_to_new_physical_scalar(PyObject *obj)
 {
-    if (PyObject_TypeCheck(obj, &PhysicalScalar_Type)) {
+    if (PyObject_TypeCheck(obj, &PhysicalFloat64Scalar_Type)) {
+        return (PhysicalScalarObject *)Py_NewRef(obj);
+    }
+    if (PyObject_TypeCheck(obj, &PhysicalFloat32Scalar_Type)) {
         return (PhysicalScalarObject *)Py_NewRef(obj);
     }
 
@@ -33,7 +36,15 @@ try_cast_to_new_physical_scalar(PyObject *obj)
             return NULL;
         }
 
-        PhysicalScalarObject *new = PhysicalScalar_raw_new(obj, default_dimension);
+        PyArray_Descr *base_descr = PyArray_DescrFromScalar(obj);
+        if (base_descr == NULL) {
+            Py_DECREF(default_dimension);
+            return NULL;
+        }
+        PyTypeObject *scalar_type = get_physicalscalar_type(base_descr);
+        Py_DECREF(base_descr);
+
+        PhysicalScalarObject *new = PhysicalScalar_raw_new(scalar_type, obj, default_dimension);
         Py_DECREF(default_dimension);
         return new;
     }
@@ -49,6 +60,7 @@ physical_scalar_add(PyObject *a, PyObject *b)
     PhysicalDimensionObject *result_dim = NULL;
     PyObject *op_value = NULL;
     PhysicalScalarObject *return_value = NULL;
+    PyArray_Descr *base_descr = NULL;
 
     scalar_a = try_cast_to_new_physical_scalar(a);
     if (scalar_a == NULL) {
@@ -71,12 +83,20 @@ physical_scalar_add(PyObject *a, PyObject *b)
         goto finish;
     }
 
-    return_value = PhysicalScalar_raw_new(op_value, result_dim);
+    base_descr = PyArray_DescrFromScalar(op_value);
+    if (base_descr == NULL) {
+        goto finish;
+    }
+    PyTypeObject *result_scalar_type = get_physicalscalar_type(base_descr);
+    return_value = PhysicalScalar_raw_new(result_scalar_type, op_value, result_dim);
     goto finish;
 
 error:
     Py_XDECREF(scalar_a);
     Py_XDECREF(scalar_b);
+    Py_XDECREF(result_dim);
+    Py_XDECREF(op_value);
+    Py_XDECREF(base_descr);
     if (PyErr_Occurred()) {
         return NULL;
     }
@@ -89,6 +109,7 @@ finish:
     Py_XDECREF(scalar_b);
     Py_XDECREF(result_dim);
     Py_XDECREF(op_value);
+    Py_XDECREF(base_descr);
     return (PyObject *)return_value;
 }
 
@@ -100,6 +121,7 @@ physical_scalar_subtract(PyObject *a, PyObject *b)
     PhysicalDimensionObject *result_dim = NULL;
     PyObject *op_value = NULL;
     PhysicalScalarObject *return_value = NULL;
+    PyArray_Descr *base_descr = NULL;
 
     scalar_a = try_cast_to_new_physical_scalar(a);
     if (scalar_a == NULL) {
@@ -121,12 +143,20 @@ physical_scalar_subtract(PyObject *a, PyObject *b)
         goto finish;
     }
 
-    return_value = PhysicalScalar_raw_new(op_value, result_dim);
+    base_descr = PyArray_DescrFromScalar(op_value);
+    if (base_descr == NULL) {
+        goto finish;
+    }
+    PyTypeObject *result_scalar_type = get_physicalscalar_type(base_descr);
+    return_value = PhysicalScalar_raw_new(result_scalar_type, op_value, result_dim);
     goto finish;
 
 error:
     Py_XDECREF(scalar_a);
     Py_XDECREF(scalar_b);
+    Py_XDECREF(result_dim);
+    Py_XDECREF(op_value);
+    Py_XDECREF(base_descr);
     if (PyErr_Occurred()) {
         return NULL;
     }
@@ -139,6 +169,7 @@ finish:
     Py_XDECREF(scalar_b);
     Py_XDECREF(result_dim);
     Py_XDECREF(op_value);
+    Py_XDECREF(base_descr);
     return (PyObject *)return_value;
 }
 
@@ -150,6 +181,7 @@ physical_scalar_multiply(PyObject *a, PyObject *b)
     PhysicalDimensionObject *result_dim = NULL;
     PyObject *op_value = NULL;
     PhysicalScalarObject *return_value = NULL;
+    PyArray_Descr *base_descr = NULL;
 
     scalar_a = try_cast_to_new_physical_scalar(a);
     if (scalar_a == NULL) {
@@ -171,18 +203,27 @@ physical_scalar_multiply(PyObject *a, PyObject *b)
         goto finish;
     }
 
-    return_value = PhysicalScalar_raw_new(op_value, result_dim);
+    base_descr = PyArray_DescrFromScalar(op_value);
+    if (base_descr == NULL) {
+        goto finish;
+    }
+    PyTypeObject *result_scalar_type = get_physicalscalar_type(base_descr);
+    return_value = PhysicalScalar_raw_new(result_scalar_type, op_value, result_dim);
 
 finish:
     Py_XDECREF(scalar_a);
     Py_XDECREF(scalar_b);
     Py_XDECREF(result_dim);
     Py_XDECREF(op_value);
+    Py_XDECREF(base_descr);
     return (PyObject *)return_value;
 
 error:
     Py_XDECREF(scalar_a);
     Py_XDECREF(scalar_b);
+    Py_XDECREF(result_dim);
+    Py_XDECREF(op_value);
+    Py_XDECREF(base_descr);
     if (PyErr_Occurred()) {
         return NULL;
     }
@@ -199,6 +240,7 @@ physical_scalar_divide(PyObject *a, PyObject *b)
     PhysicalDimensionObject *result_dim = NULL;
     PyObject *op_value = NULL;
     PhysicalScalarObject *return_value = NULL;
+    PyArray_Descr *base_descr = NULL;
 
     scalar_a = try_cast_to_new_physical_scalar(a);
     if (scalar_a == NULL) {
@@ -220,18 +262,27 @@ physical_scalar_divide(PyObject *a, PyObject *b)
         goto finish;
     }
 
-    return_value = PhysicalScalar_raw_new(op_value, result_dim);
+    base_descr = PyArray_DescrFromScalar(op_value);
+    if (base_descr == NULL) {
+        goto finish;
+    }
+    PyTypeObject *result_scalar_type = get_physicalscalar_type(base_descr);
+    return_value = PhysicalScalar_raw_new(result_scalar_type, op_value, result_dim);
 
 finish:
     Py_XDECREF(scalar_a);
     Py_XDECREF(scalar_b);
     Py_XDECREF(result_dim);
     Py_XDECREF(op_value);
+    Py_XDECREF(base_descr);
     return (PyObject *)return_value;
 
 error:
     Py_XDECREF(scalar_a);
     Py_XDECREF(scalar_b);
+    Py_XDECREF(result_dim);
+    Py_XDECREF(op_value);
+    Py_XDECREF(base_descr);
     if (PyErr_Occurred()) {
         return NULL;
     }
