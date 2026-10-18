@@ -52,7 +52,12 @@ PyInit__physicaldtype_main(void)
         goto error;
     }
 
-    if (PyModule_AddObjectRef(m, "PhysicalScalar", (PyObject *)&PhysicalScalar_Type) < 0) {
+    if (PyModule_AddObjectRef(m, "PhysicalFloat64Scalar", (PyObject *)&PhysicalFloat64Scalar_Type) <
+        0) {
+        goto error;
+    }
+    if (PyModule_AddObjectRef(m, "PhysicalFloat32Scalar", (PyObject *)&PhysicalFloat32Scalar_Type) <
+        0) {
         goto error;
     }
 
@@ -60,7 +65,10 @@ PyInit__physicaldtype_main(void)
         goto error;
     }
 
-    if (PyModule_AddObjectRef(m, "PhysicalDType", (PyObject *)&PhysicalDType) < 0) {
+    if (PyModule_AddObjectRef(m, "PhysicalFloat64DType", (PyObject *)&PhysicalFloat64DType) < 0) {
+        goto error;
+    }
+    if (PyModule_AddObjectRef(m, "PhysicalFloat32DType", (PyObject *)&PhysicalFloat32DType) < 0) {
         goto error;
     }
 

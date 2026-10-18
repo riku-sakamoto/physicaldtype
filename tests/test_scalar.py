@@ -7,6 +7,18 @@ from physicaldtype import PhysicalScalar, PhysicalDimension, physical_dimension_
 from hypothesis import given, assume
 from hypothesis import strategies as st
 
+from tests.constants import SUPPORTED_DTYPES
+
+
+# HACK: In the future, we may want to support Python float itself.
+def _get_numpy_scalar(value: float, dtype: str) -> np.generic:
+    if dtype == "float64":
+        return np.float64(value)
+    elif dtype == "float32":
+        return np.float32(value)
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype}")
+
 
 @given(
     exponents=st.lists(
@@ -14,11 +26,17 @@ from hypothesis import strategies as st
     ),
     value=st.floats(allow_nan=False, allow_infinity=False),
 )
-def test__physical_scalar_can_initialize(exponents: list[float], value: float):
+@pytest.mark.parametrize("storage_dtype", SUPPORTED_DTYPES)
+def test__physical_scalar_can_initialize(
+    exponents: list[float], value: float, storage_dtype: str
+):
     phy_dim = {dim: exp for dim, exp in zip(physical_dimension_names, exponents)}
-    scalar = PhysicalScalar(np.float64(value), phy_dim)
+    scalar = PhysicalScalar[storage_dtype](
+        _get_numpy_scalar(value, storage_dtype), phy_dim
+    )
 
-    assert isinstance(scalar.value, float)
+    assert np.issubdtype(type(scalar.value), np.floating)
+    assert scalar.value.dtype == np.dtype(storage_dtype)
     assert isinstance(scalar.physical_dimension, PhysicalDimension)
 
     for dim in physical_dimension_names:
@@ -41,32 +59,43 @@ def test__physical_scalar_can_initialize(exponents: list[float], value: float):
     value1=st.floats(allow_nan=False, allow_infinity=False, width=32),
     value2=st.floats(allow_nan=False, allow_infinity=False, width=32),
 )
+@pytest.mark.parametrize("storage_dtype", SUPPORTED_DTYPES)
 def test__physical_scalar_arithmetic_operations(
     scalar_op: Callable[[Any, Any], Any],
     desired_dimension_op: Callable[[Any, Any], Any] | None,
     exponents: list[float],
     value1: float,
     value2: float,
+    storage_dtype: str,
 ):
     if scalar_op is operator.truediv:
         assume(value2 != 0.0)
 
     phy_dim = {dim: exp for dim, exp in zip(physical_dimension_names, exponents)}
-    scalar1 = PhysicalScalar(np.float64(value1), phy_dim)
-    scalar2 = PhysicalScalar(np.float64(value2), phy_dim)
+    scalar1 = PhysicalScalar[storage_dtype](
+        _get_numpy_scalar(value1, storage_dtype), phy_dim
+    )
+    scalar2 = PhysicalScalar[storage_dtype](
+        _get_numpy_scalar(value2, storage_dtype), phy_dim
+    )
 
     res = scalar_op(scalar1, scalar2)
 
-    assert isinstance(res, PhysicalScalar)
+    assert isinstance(res, PhysicalScalar[storage_dtype])
     assert res.value == scalar_op(scalar1.value, scalar2.value)
 
     if desired_dimension_op is None:
         assert res.physical_dimension.exponents == scalar1.physical_dimension.exponents
 
 
-def test__scalar_failed_divide():
-    scalar1 = PhysicalScalar(np.float64(1.0), {"L": 1})
-    scalar2 = PhysicalScalar(np.float64(0.0), {"L": 1})
+@pytest.mark.parametrize("storage_dtype", SUPPORTED_DTYPES)
+def test__scalar_failed_divide(storage_dtype: str):
+    scalar1 = PhysicalScalar[storage_dtype](
+        _get_numpy_scalar(1.0, storage_dtype), {"L": 1}
+    )
+    scalar2 = PhysicalScalar[storage_dtype](
+        _get_numpy_scalar(0.0, storage_dtype), {"L": 1}
+    )
 
     with pytest.raises(FloatingPointError, match="divide by zero"):
         with np.errstate(divide="raise"):
@@ -76,11 +105,16 @@ def test__scalar_failed_divide():
 @pytest.mark.parametrize(
     "scalar_op", [operator.add, operator.sub, operator.mul, operator.truediv]
 )
-def test__scalar_not_implemented(scalar_op: Callable[[Any, Any], Any]):
-    scalar1 = PhysicalScalar(np.float64(1.0), {"L": 1})
+@pytest.mark.parametrize("storage_dtype", SUPPORTED_DTYPES)
+def test__scalar_not_implemented(
+    scalar_op: Callable[[Any, Any], Any], storage_dtype: str
+):
+    scalar1 = PhysicalScalar[storage_dtype](
+        _get_numpy_scalar(1.0, storage_dtype), {"L": 1}
+    )
 
     with pytest.raises(
         TypeError,
         match="unsupported operand type",
     ):
-        _ = scalar1 + object()  # type: ignore
+        _ = scalar_op(scalar1, object())  # type: ignore
