@@ -156,10 +156,17 @@ check_scalar_type(PyObject *obj, PhysicalDTypeObject *dtype)
     }
 
     if (PyArray_CheckScalar(obj)) {
-        if (PyDataType_ISNUMBER(PyArray_DescrFromScalar(obj)) != 1) {
-            PyErr_SetString(PyExc_TypeError, "Object is not a numeric scalar");
+        PyArray_Descr *descr = PyArray_DescrFromScalar(obj);
+        if (descr == NULL) {
             return -1;
         }
+        if (PyDataType_ISNUMBER(descr) != 1) {
+            PyErr_SetString(PyExc_TypeError, "Object is not a numeric scalar");
+
+            Py_DECREF(descr);
+            return -1;
+        }
+        Py_DECREF(descr);
         return 0;
     }
 
