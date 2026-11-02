@@ -16,65 +16,83 @@
 #include "physical_dimension.h"
 #include "physical_dimension_ops.h"
 
+/* This function converts array from PhysicalDType to numeric dtype.  */
+/* HACK: This is a temporary implementation.  In the future, we should use the existing NumPy
+ * casting mechanism to handle this conversion. */
 static int
-phy_to_float64_copy(PyArrayMethod_Context *context, char *const *data, npy_intp const *dimensions,
-                    npy_intp const *strides, NpyAuxData *NPY_UNUSED(auxdata))
+phy_to_numpy_copy(PyArrayMethod_Context *context, char *const *data, npy_intp const *dimensions,
+                  npy_intp const *strides, NpyAuxData *NPY_UNUSED(auxdata))
 {
-    PhysicalDTypeObject *src = (PhysicalDTypeObject *)context->descriptors[0];
-
-    npy_intp itemsize = src->storage_descr->elsize;
-
-    char *in = data[0];
-    char *out = data[1];
-
-    for (npy_intp i = 0; i < dimensions[0]; i++) {
-        memcpy(out, in, (size_t)itemsize);
-        in += strides[0];
-        out += strides[1];
+    if (dimensions[0] == 0) {
+        return 0;
     }
 
-    return 0;
+    PhysicalDTypeObject *src = (PhysicalDTypeObject *)context->descriptors[0];
+    PyArray_Descr *src_descr = src->storage_descr;
+    PyArray_Descr *dst = context->descriptors[1];
+
+    Py_INCREF(src_descr);
+    PyArrayObject *tmp_src = (PyArrayObject *)PyArray_NewFromDescr(
+            &PyArray_Type, src_descr, 1, (npy_intp *)dimensions, &strides[0], data[0], 0, NULL);
+    if (tmp_src == NULL) {
+        return -1;
+    }
+
+    Py_INCREF(dst);
+    PyArrayObject *tmp_dst =
+            (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dst, 1, (npy_intp *)dimensions,
+                                                  &strides[1], data[1], NPY_ARRAY_WRITEABLE, NULL);
+    if (tmp_dst == NULL) {
+        Py_DECREF(tmp_src);
+        return -1;
+    }
+
+    int ret = PyArray_CopyInto(tmp_dst, tmp_src);
+    Py_DECREF(tmp_src);
+    Py_DECREF(tmp_dst);
+    return ret;
 }
 
 static int
-phy_to_float64_get_loop(PyArrayMethod_Context *context, int NPY_UNUSED(aligned),
+phy_to_numeric_get_loop(PyArrayMethod_Context *context, int NPY_UNUSED(aligned),
                         int NPY_UNUSED(move_references), const npy_intp *NPY_UNUSED(strides),
                         PyArrayMethod_StridedLoop **out_loop,
                         NpyAuxData **NPY_UNUSED(out_transferdata), NPY_ARRAYMETHOD_FLAGS *flags)
 {
     PhysicalDTypeObject *src_dtype = (PhysicalDTypeObject *)context->descriptors[0];
-    if (src_dtype->storage_descr->type_num != NPY_DOUBLE) {
+    PyArray_Descr *dst_dtype = context->descriptors[1];
+
+    if (PyArray_CanCastTypeTo(src_dtype->storage_descr, dst_dtype, NPY_SAFE_CASTING) == 0) {
         // Unreachable, since we check in resolve_descriptors
-        // TODO: Implement conversion from other storage types to float64
-        // we would like to use the existing NumPy casting mechanism
-        PyErr_SetString(PyExc_TypeError, "Unsupported storage dtype");
+        PyErr_SetString(PyExc_TypeError, "Cannot cast storage dtype to destination dtype");
         return -1;
     }
 
-    *out_loop = (PyArrayMethod_StridedLoop *)&phy_to_float64_copy;
-    *flags = 0;
+    *out_loop = (PyArrayMethod_StridedLoop *)&phy_to_numpy_copy;
+    *flags = NPY_METH_REQUIRES_PYAPI;
     return 0;
 }
 
 static int
-phy_to_float64_resolve_descriptors(PyObject *NPY_UNUSED(self),
+phy_to_numeric_resolve_descriptors(PyObject *NPY_UNUSED(self),
                                    PyArray_DTypeMeta *const *NPY_UNUSED(dtypes),
                                    PyArray_Descr *const *given_descrs, PyArray_Descr **loop_descrs,
                                    npy_intp *NPY_UNUSED(view_offset))
 {
     PhysicalDTypeObject *src_dtype = (PhysicalDTypeObject *)given_descrs[0];
-    if (src_dtype->storage_descr->type_num != NPY_DOUBLE) {
-        // So far, we banned this casting
-        // TODO: Implement conversion using the existing NumPy casting mechanism
-        PyErr_SetString(PyExc_TypeError, "Unsupported storage dtype");
+    PyArray_Descr *dst_dtype = given_descrs[1];
+    if (dst_dtype == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Destination dtype cannot be NULL");
+        return -1;
+    }
+
+    if (PyArray_CanCastTypeTo(src_dtype->storage_descr, dst_dtype, NPY_SAFE_CASTING) == 0) {
+        PyErr_SetString(PyExc_TypeError, "Cannot cast storage dtype to destination dtype");
         return -1;
     }
 
     loop_descrs[0] = (PyArray_Descr *)Py_NewRef(src_dtype);
-    loop_descrs[1] = (PyArray_Descr *)PyArray_DescrFromType(NPY_DOUBLE);
-    if (loop_descrs[1] == NULL) {
-        return -1;
-    }
+    loop_descrs[1] = (PyArray_Descr *)Py_NewRef(dst_dtype);
 
     return NPY_SAFE_CASTING;
 }
@@ -101,6 +119,29 @@ phy_to_phy_copy(PyArrayMethod_Context *context, char *const *data, npy_intp cons
     return 0;
 }
 
+static int
+phy_f32_to_phy_f64_copy(PyArrayMethod_Context *NPY_UNUSED(context), char *const *data,
+                        npy_intp const *dimensions, npy_intp const *strides,
+                        NpyAuxData *NPY_UNUSED(auxdata))
+{
+    char *in = data[0];
+    char *out = data[1];
+
+    for (npy_intp i = 0; i < dimensions[0]; i++) {
+        float src_value;
+        double dst_value;
+
+        memcpy(&src_value, in, sizeof(float));
+        dst_value = (double)src_value;
+        memcpy(out, &dst_value, sizeof(double));
+
+        in += strides[0];
+        out += strides[1];
+    }
+
+    return 0;
+}
+
 static NPY_CASTING
 phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self),
                                PyArray_DTypeMeta *const *NPY_UNUSED(dtypes),
@@ -116,17 +157,11 @@ phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self),
 
     loop_descrs[1] = (PyArray_Descr *)Py_NewRef(given_descrs[1]);
 
-    int same_storage_dtype = PyObject_RichCompareBool(
-            (PyObject *)((PhysicalDTypeObject *)loop_descrs[0])->storage_descr,
-            (PyObject *)((PhysicalDTypeObject *)loop_descrs[1])->storage_descr, Py_EQ);
-    if (same_storage_dtype == -1) {
-        PyErr_SetString(PyExc_TypeError, "Failed to compare storage dtypes");
-        return -1;
-    }
-    else if (same_storage_dtype == 0) {
-        // Temporarily block this casting
-        PyErr_SetString(PyExc_TypeError,
-                        "Cannot cast between PhysicalDType with different storage dtypes");
+    if (PyArray_CanCastTypeTo(((PhysicalDTypeObject *)loop_descrs[0])->storage_descr,
+                              ((PhysicalDTypeObject *)loop_descrs[1])->storage_descr,
+                              NPY_SAFE_CASTING) == 0) {
+        Py_DECREF(loop_descrs[0]);
+        Py_DECREF(loop_descrs[1]);
         return -1;
     }
 
@@ -150,79 +185,190 @@ phy_to_phy_get_loop(PyArrayMethod_Context *context, int NPY_UNUSED(aligned),
 
     npy_intp src_elsize = src_dtype->storage_descr->elsize;
     npy_intp dst_elsize = dst_dtype->storage_descr->elsize;
-    if (src_elsize != dst_elsize) {
-        // Unreachable, since we check in resolve_descriptors
+    if (src_elsize == dst_elsize) {
+        *out_loop = (PyArrayMethod_StridedLoop *)&phy_to_phy_copy;
+        *flags = 0;
+        return 0;
+    }
+
+    if (src_dtype->storage_descr->type_num == NPY_FLOAT32 &&
+        dst_dtype->storage_descr->type_num == NPY_FLOAT64) {
+        *out_loop = (PyArrayMethod_StridedLoop *)&phy_f32_to_phy_f64_copy;
+        *flags = 0;
+        return 0;
+    }
+
+    PyErr_SetString(PyExc_TypeError, "unsupported physical to physical cast");
+    return -1;
+}
+
+// # region Numeric to PhysicalDType
+
+static int
+numeric_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self),
+                                   PyArray_DTypeMeta *const *NPY_UNUSED(dtypes),
+                                   PyArray_Descr *const *given_descrs, PyArray_Descr **loop_descrs,
+                                   npy_intp *NPY_UNUSED(view_offset))
+{
+    PyArray_Descr *src_dtype = given_descrs[0];
+    PhysicalDTypeObject *dst_dtype = (PhysicalDTypeObject *)given_descrs[1];
+    if (dst_dtype == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Destination dtype is NULL");
         return -1;
     }
 
-    *out_loop = (PyArrayMethod_StridedLoop *)&phy_to_phy_copy;
+    if (src_dtype->type_num != dst_dtype->storage_descr->type_num) {
+        // NOTE: So far, only same storage dtype casts are supported
+        PyErr_Format(PyExc_TypeError, "Cannot cast from %s to %s", src_dtype->typeobj->tp_name,
+                     dst_dtype->storage_descr->typeobj->tp_name);
+        return -1;
+    }
+
+    loop_descrs[0] = (PyArray_Descr *)Py_NewRef(src_dtype);
+    loop_descrs[1] = (PyArray_Descr *)Py_NewRef(dst_dtype);
+    return NPY_SAFE_CASTING;
+}
+
+static int
+numeric_to_phy_copy(PyArrayMethod_Context *context, char *const *data, npy_intp const *dimensions,
+                    npy_intp const *strides, NpyAuxData *NPY_UNUSED(auxdata))
+{
+    PyArray_Descr *src = context->descriptors[0];
+    npy_intp itemsize = src->elsize;
+
+    char *in = data[0];
+    char *out = data[1];
+
+    for (npy_intp i = 0; i < dimensions[0]; i++) {
+        memcpy(out, in, (size_t)itemsize);
+        in += strides[0];
+        out += strides[1];
+    }
+
+    return 0;
+}
+
+static int
+numeric_to_phy_get_loop(PyArrayMethod_Context *NPY_UNUSED(context), int NPY_UNUSED(aligned),
+                        int NPY_UNUSED(move_references), const npy_intp *NPY_UNUSED(strides),
+                        PyArrayMethod_StridedLoop **out_loop,
+                        NpyAuxData **NPY_UNUSED(out_transferdata), NPY_ARRAYMETHOD_FLAGS *flags)
+{
+    *out_loop = (PyArrayMethod_StridedLoop *)&numeric_to_phy_copy;
     *flags = 0;
     return 0;
 }
 
-/*
- * NumPy currently allows NULL for the own DType/"cls".
- */
-static PyArray_DTypeMeta *phy2phy_dtypes[2] = {NULL, NULL};
-
-static PyType_Slot phy2phy_slots[] = {
-        {NPY_METH_resolve_descriptors, &phy_to_phy_resolve_descriptors},
-        {NPY_METH_get_loop, &phy_to_phy_get_loop},
-        {0, NULL}};
-
-static PyArrayMethod_Spec PhyToPhyCastSpec = {
-        .name = "cast_PhysicalDType_to_PhysicalDType",
-        .nin = 1,
-        .nout = 1,
-        .flags = NPY_METH_SUPPORTS_UNALIGNED,
-        .casting = NPY_UNSAFE_CASTING,
-        .dtypes = phy2phy_dtypes,
-        .slots = phy2phy_slots,
-};
-
 // #endregion
 
-static PyType_Slot p2f_slots[] = {
-        {NPY_METH_resolve_descriptors, (void *)&phy_to_float64_resolve_descriptors},
-        {NPY_METH_get_loop, (void *)&phy_to_float64_get_loop},
-        {0, NULL}};
+static PyArrayMethod_Spec *
+create_cast_spec(const char *name, PyArray_DTypeMeta *src_dtype, PyArray_DTypeMeta *dst_dtype,
+                 PyType_Slot *slots, NPY_CASTING casting)
+{
+    PyArrayMethod_Spec *spec = calloc(1, sizeof(*spec));
+    if (spec == NULL) {
+        return NULL;
+    }
 
-static char *p2f_name = "cast_PhysicalDType_to_Float64";
+    spec->dtypes = malloc(2 * sizeof(*spec->dtypes));
+    if (spec->dtypes == NULL) {
+        free(spec);
+        return NULL;
+    }
+
+    spec->dtypes[0] = src_dtype;
+    spec->dtypes[1] = dst_dtype;
+
+    spec->name = name;
+    spec->nin = 1;
+    spec->nout = 1;
+    spec->flags = NPY_METH_SUPPORTS_UNALIGNED;
+    spec->casting = casting;
+    spec->slots = slots;
+
+    return spec;
+}
 
 PyArrayMethod_Spec **
-init_casts(void)
+init_casts(PyArray_DTypeMeta *dtype_meta, bool include_mutual_casts)
 {
-    PyArray_DTypeMeta **p2f_dtypes = malloc(2 * sizeof(PyArray_DTypeMeta *));
-    if (p2f_dtypes == NULL) {
-        return NULL;
-    }
-    p2f_dtypes[0] = NULL;
-    p2f_dtypes[1] = &PyArray_DoubleDType;
-
-    PyArrayMethod_Spec *PhyToFloat64CastSpec = malloc(sizeof(PyArrayMethod_Spec));
-    if (PhyToFloat64CastSpec == NULL) {
-        free(p2f_dtypes);
-        return NULL;
-    }
-    PhyToFloat64CastSpec->name = p2f_name;
-    PhyToFloat64CastSpec->nin = 1;
-    PhyToFloat64CastSpec->nout = 1;
-    PhyToFloat64CastSpec->flags = NPY_METH_SUPPORTS_UNALIGNED;
-    PhyToFloat64CastSpec->casting = NPY_SAFE_CASTING;
-    PhyToFloat64CastSpec->dtypes = p2f_dtypes;
-    PhyToFloat64CastSpec->slots = p2f_slots;
-
-    PyArrayMethod_Spec **casts = malloc(3 * sizeof(PyArrayMethod_Spec *));
+    // Items must be total num of casts + 1 for the NULL terminator at the end.
+    int num_casts = (include_mutual_casts ? 7 : 5);
+    PyArrayMethod_Spec **casts = calloc(num_casts + 1, sizeof(*casts));
     if (casts == NULL) {
-        free(p2f_dtypes);
-        free(PhyToFloat64CastSpec);
         return NULL;
     }
-    casts[0] = &PhyToPhyCastSpec;
-    casts[1] = PhyToFloat64CastSpec;
-    casts[2] = NULL;
+
+    // physical to physical dtypes array
+    static PyType_Slot phy2phy_slots[] = {
+            {NPY_METH_resolve_descriptors, &phy_to_phy_resolve_descriptors},
+            {NPY_METH_get_loop, &phy_to_phy_get_loop},
+            {0, NULL}};
+    casts[0] = create_cast_spec("cast_PhysicalDType_to_PhysicalDType", dtype_meta, dtype_meta,
+                                phy2phy_slots, NPY_UNSAFE_CASTING);
+    if (casts[0] == NULL) {
+        goto fail;
+    }
+
+    // physical to numeric dtypes array
+    static PyType_Slot p2f_slots[] = {
+            {NPY_METH_resolve_descriptors, (void *)&phy_to_numeric_resolve_descriptors},
+            {NPY_METH_get_loop, (void *)&phy_to_numeric_get_loop},
+            {0, NULL},
+    };
+
+    casts[1] = create_cast_spec("cast_PhysicalDType_to_Float32", dtype_meta, &PyArray_FloatDType,
+                                p2f_slots, NPY_SAFE_CASTING);
+    if (casts[1] == NULL) {
+        goto fail;
+    }
+
+    casts[2] = create_cast_spec("cast_PhysicalDType_to_Float64", dtype_meta, &PyArray_DoubleDType,
+                                p2f_slots, NPY_SAFE_CASTING);
+    if (casts[2] == NULL) {
+        goto fail;
+    }
+
+    // numeric to physical dtypes array
+    static PyType_Slot f2p_slots[] = {
+            {NPY_METH_resolve_descriptors, (void *)&numeric_to_phy_resolve_descriptors},
+            {NPY_METH_get_loop, (void *)&numeric_to_phy_get_loop},
+            {0, NULL},
+    };
+
+    casts[3] = create_cast_spec("cast_Float64_to_PhysicalDType", &PyArray_DoubleDType, dtype_meta,
+                                f2p_slots, NPY_SAFE_CASTING);
+    if (casts[3] == NULL) {
+        goto fail;
+    }
+
+    casts[4] = create_cast_spec("cast_Float32_to_PhysicalDType", &PyArray_FloatDType, dtype_meta,
+                                f2p_slots, NPY_SAFE_CASTING);
+    if (casts[4] == NULL) {
+        goto fail;
+    }
+
+    if (include_mutual_casts) {
+        casts[5] = create_cast_spec("cast_PhysicalFloat32DType_to_PhysicalFloat64DType",
+                                    &PhysicalFloat32DType, &PhysicalFloat64DType, phy2phy_slots,
+                                    NPY_UNSAFE_CASTING);
+        if (casts[5] == NULL) {
+            goto fail;
+        }
+
+        casts[6] = create_cast_spec("cast_PhysicalFloat64DType_to_PhysicalFloat32DType",
+                                    &PhysicalFloat64DType, &PhysicalFloat32DType, phy2phy_slots,
+                                    NPY_UNSAFE_CASTING);
+        if (casts[6] == NULL) {
+            goto fail;
+        }
+    }
 
     return casts;
+
+fail:
+    free_casts(casts);
+    return NULL;
 }
 
 void
@@ -232,9 +378,7 @@ free_casts(PyArrayMethod_Spec **casts)
         return;
     }
 
-    // NOTE: i = 0 is the PhyToPhyCastSpec, which is a static variable and should not be freed.
-    // TODO: Consider refactoring to make all casts dynamically allocated for consistency.
-    for (int i = 1; casts[i] != NULL; i++) {
+    for (int i = 0; casts[i] != NULL; i++) {
         PyArrayMethod_Spec *spec = casts[i];
         if (spec == NULL) {
             continue;

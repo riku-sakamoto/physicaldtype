@@ -350,10 +350,11 @@ PyArray_DTypeMeta PhysicalFloat32DType = {{{
 }}};
 
 int
-init_physical_dtype_meta(PyArray_DTypeMeta *dtype_meta, PyTypeObject *scalar_type)
+init_physical_dtype_meta(PyArray_DTypeMeta *dtype_meta, PyTypeObject *scalar_type,
+                         bool include_mutual_casts)
 {
     // Initialize the physical dtype
-    PyArrayMethod_Spec **casts = init_casts();
+    PyArrayMethod_Spec **casts = init_casts(dtype_meta, include_mutual_casts);
     if (!casts) {
         return -1;
     }
@@ -386,11 +387,11 @@ init_physical_dtype_meta(PyArray_DTypeMeta *dtype_meta, PyTypeObject *scalar_typ
 int
 init_physical_dtype(void)
 {
-    if (init_physical_dtype_meta(&PhysicalFloat64DType, &PhysicalFloat64Scalar_Type) < 0) {
+    if (init_physical_dtype_meta(&PhysicalFloat64DType, &PhysicalFloat64Scalar_Type, false) < 0) {
         return -1;
     }
 
-    if (init_physical_dtype_meta(&PhysicalFloat32DType, &PhysicalFloat32Scalar_Type) < 0) {
+    if (init_physical_dtype_meta(&PhysicalFloat32DType, &PhysicalFloat32Scalar_Type, true) < 0) {
         return -1;
     }
 
