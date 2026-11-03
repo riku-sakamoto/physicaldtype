@@ -142,6 +142,11 @@ phy_f32_to_phy_f64_copy(PyArrayMethod_Context *NPY_UNUSED(context), char *const 
     return 0;
 }
 
+const NPY_CASTING rules[] = {
+        NPY_NO_CASTING,        NPY_EQUIV_CASTING,  NPY_SAFE_CASTING,
+        NPY_SAME_KIND_CASTING, NPY_UNSAFE_CASTING,
+};
+
 static NPY_CASTING
 phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self),
                                PyArray_DTypeMeta *const *NPY_UNUSED(dtypes),
@@ -157,21 +162,21 @@ phy_to_phy_resolve_descriptors(PyObject *NPY_UNUSED(self),
 
     loop_descrs[1] = (PyArray_Descr *)Py_NewRef(given_descrs[1]);
 
-    if (PyArray_CanCastTypeTo(((PhysicalDTypeObject *)loop_descrs[0])->storage_descr,
-                              ((PhysicalDTypeObject *)loop_descrs[1])->storage_descr,
-                              NPY_SAFE_CASTING) == 0) {
-        Py_DECREF(loop_descrs[0]);
-        Py_DECREF(loop_descrs[1]);
-        return -1;
-    }
-
     if (physical_dimension_equal(((PhysicalDTypeObject *)loop_descrs[0])->physical_dimension,
                                  ((PhysicalDTypeObject *)loop_descrs[1])->physical_dimension) ==
         false) {
         return NPY_UNSAFE_CASTING;
     }
 
-    return NPY_SAFE_CASTING;
+    for (int i = 0; i < 5; i++) {
+        if (PyArray_CanCastTypeTo(((PhysicalDTypeObject *)loop_descrs[0])->storage_descr,
+                                  ((PhysicalDTypeObject *)loop_descrs[1])->storage_descr,
+                                  rules[i]) != 0) {
+            return rules[i];
+        }
+    }
+
+    return -1;
 }
 
 static int
