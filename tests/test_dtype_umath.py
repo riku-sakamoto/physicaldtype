@@ -204,12 +204,21 @@ def test__cannot_convert_to_incompatible_dtype(storage_dtype: str):
         _ = np.multiply(a, a, out=out)
 
 
-# def test__calculation_with_different_storage_dtype(dtype1: np.dtype, dtype2: np.dtype):
-#     a = np.array([2.0], dtype=PhysicalDType({"L": 1}, storage_dtype=dtype1))
-#     b = np.array([3.0], dtype=PhysicalDType({"L": 1}, storage_dtype=dtype2))
+# @pytest.mark.parametrize(
+#     "dtype1, dtype2, desired_dtype",
+#     [
+#         ("float32", "float32", "float32"),
+#         ("float32", "float64", "float64"),
+#         ("float64", "float32", "float64"),
+#         ("float64", "float64", "float64"),
+#     ],
+# )
+# def test__calculation_with_different_storage_dtype(dtype1: str, dtype2: str, desired_dtype: str):
+#     a = np.array([2.0], dtype=PhysicalDType[dtype1]({"L": 1}))
+#     b = np.array([3.0], dtype=PhysicalDType[dtype2]({"L": 1}))
 
 #     result = a * b
-#     assert isinstance(result.dtype, PhysicalDType)
+#     assert isinstance(result.dtype, PhysicalDType[desired_dtype])
 
 #     assert result.dtype.storage_dtype == np.result_type(dtype1, dtype2)
 #     assert result[0].value == 6.0

@@ -109,3 +109,21 @@ def test__initialize_with_storage_dtype(storage_dtype: str):
 
     item = arr[0]
     assert item.value.dtype == storage_dtype
+
+
+@pytest.mark.parametrize(
+    "from_dtype, to_dtype",
+    [
+        ("float64", "float64"),
+        # ("float64", "float32"),  # So far, not supported
+        ("float32", "float64"),
+    ],
+)
+def test__cast_to_different_storage_dtype(
+    from_dtype: str,
+    to_dtype: str,
+):
+    arr: np.ndarray = np.array([3.0, 4.0], dtype=PhysicalDType[from_dtype]({"L": 1}))
+
+    result = arr.astype(PhysicalDType[to_dtype]({"L": 1}))
+    assert isinstance(result.dtype, PhysicalDType[to_dtype])
