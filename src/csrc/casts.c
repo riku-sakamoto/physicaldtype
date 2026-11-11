@@ -363,7 +363,7 @@ init_casts(PyArray_DTypeMeta *dtype_meta, bool include_mutual_casts)
 
         casts[6] = create_cast_spec("cast_PhysicalFloat64DType_to_PhysicalFloat32DType",
                                     &PhysicalFloat64DType, &PhysicalFloat32DType, phy2phy_slots,
-                                    NPY_UNSAFE_CASTING);
+                                    NPY_SAME_KIND_CASTING);
         if (casts[6] == NULL) {
             goto fail;
         }
