@@ -14,14 +14,17 @@ lint:
 	uv run ruff check --output-format=full
 	uv run ruff format --diff
 
-# .PHONY: test
-# test:
-# 	pytest
+.PHONY: test
+test: install
+	uv run pytest tests --maxfail=1 -v
 
 .PHONY: build
 build:
 	uv build --wheel
 
-.PHONY: install_dev
-install_dev:
-	uv sync --extra dev
+.PHONY: install
+install:
+	uv sync --no-install-project	
+	uv sync --no-build-isolation
+
+

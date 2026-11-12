@@ -21,7 +21,8 @@ py = import('python').find_installation(pure: false)
 incdir_numpy = run_command(py,
   [
     '-c',
-    'import numpy; print(numpy.get_include())'
+    'import os, sys, numpy; print(os.path.relpath(numpy.get_include(), sys.argv[1]))',
+    meson.current_source_dir(),
   ],
   check: true
 ).stdout().strip()
