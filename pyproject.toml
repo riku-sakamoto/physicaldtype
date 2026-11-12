@@ -2,7 +2,6 @@
 build-backend = 'mesonpy'
 requires = [
     "meson-python",
-    "wheel",
     "numpy>=2.4"
 ]
 
@@ -33,13 +32,6 @@ dependencies = [
     "numpy>=2.4",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "hypothesis>=6.168.1",
-    "pytest>=9.1.1",
-    "meson-python",
-]
-
 [project.urls]
 Homepage = "https://github.com/riku-sakamoto/physicaldtype"
 Repository = "https://github.com/riku-sakamoto/physicaldtype"
@@ -49,6 +41,7 @@ Issues = "https://github.com/riku-sakamoto/physicaldtype/issues"
 dev = [
     "hypothesis>=6.168.1",
     "pytest>=9.1.1",
+    "meson-python",
 ]
 
 [tool.ruff]

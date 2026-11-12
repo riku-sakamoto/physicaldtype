@@ -11,13 +11,12 @@ The goal is to create a DType that can represent both physical dimension (e.g. L
 
 :warning: Physical dimension is only supported for now. Physical unit support is supposed to be implemented in the near future.
 
-## How to build this repo
+## Installation
 
-Only Linux is supported for now.
+Requires Linux and Python 3.12 or later.
 
 ```bash
-uv sync --extra dev
-make build
+pip install physicaldtype
 ```
 
 
@@ -37,6 +36,37 @@ print(force.dtype)
 
 ```
 
+
+## Development
+
+Requires Nix with flakes enabled. The development shell provides Python, uv, and the build tools.
+After cloning the repository, run the following commands to enter the development shell and install the project:
+
+```bash
+nix develop
+make install
+```
+
+`make install` installs development dependencies and the project in editable mode.
+Changes to C code are rebuilt automatically on the first import in a new Python process.
+
+Run tests:
+
+```bash
+uv run --no-sync pytest tests/ -v
+```
+
+Start Python for interactive checks:
+
+```bash
+uv run --no-sync python3
+```
+
+Build a wheel in `dist/`:
+
+```bash
+make build
+```
 
 ## License
 
